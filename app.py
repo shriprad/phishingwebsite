@@ -13,23 +13,14 @@ genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 # Function to analyze a URL and return justification for phishing suspicion
 def analyze_url(url):
-    # Remove trailing slashes from the URL to avoid inconsistency
-    url = url.rstrip('/')
-    
-    # Start a chat session with Generative AI
+    url = url.rstrip('/')  # Normalize URL
     model = genai.GenerativeModel('gemini-pro')
     chat = model.start_chat(history=[])
-    
-    # Create a prompt for the analysis
     prompt = f"Is this URL a phishing attempt: {url}?"
-    
-    # Send the message and handle the response
     response = chat.send_message(prompt, stream=True)
     
-    # Variable to track justification
     justification = ""
     
-    # Process the response
     for chunk in response:
         if hasattr(chunk, 'text') and chunk.text:
             justification += f"Response: {chunk.text}\n"
@@ -38,34 +29,30 @@ def analyze_url(url):
                 justification += f"Category: {rating.category}, Probability: {rating.probability}\n"
                 # Add justification based on the safety category
                 if rating.category == 'HARM_CATEGORY_DANGEROUS_CONTENT':
-                    if isinstance(rating.probability, str):  # If probability is a string
-                        if rating.probability == 'HIGH':
-                            justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability == 'MEDIUM':
-                            justification += "Justification: The content is moderately dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability == 'LOW':
-                            justification += "Justification: The content is somewhat dangerous, but the likelihood of phishing is low.\n"
-                    elif isinstance(rating.probability, (int, float)):  # If probability is numeric
-                        if rating.probability >= 0.75:
-                            justification += "Justification: The content has a high probability of being dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability >= 0.5:
-                            justification += "Justification: The content has a moderate probability of being dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability >= 0.25:
-                            justification += "Justification: The content has a low probability of being dangerous, indicating a lower likelihood of phishing.\n"
-                # Handle other suspicious categories
-                elif rating.category in ['HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_HARASSMENT']:
-                    if isinstance(rating.probability, str):
-                        if rating.probability == 'HIGH' or rating.probability == 'MEDIUM':
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
-                    elif isinstance(rating.probability, (int, float)):
-                        if rating.probability >= 0.5:
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
-
-    # If no text or safety ratings found
+                    justification += f"Justification: {rating.category} with probability {rating.probability}\n"
+    
     if not justification:
         justification = "No sufficient information to determine phishing suspicion."
-
+    
     return justification
+
+# Function to analyze email headers and return PII redaction reasons
+def analyze_email_headers(headers):
+    model = genai.GenerativeModel('gemini-pro')
+    chat = model.start_chat(history=[])
+    prompt = f"Analyze these email headers and detect any personal identifiable information (PII) or sensitive data: {headers}"
+    response = chat.send_message(prompt, stream=True)
+
+    email_analysis = ""
+
+    for chunk in response:
+        if hasattr(chunk, 'text') and chunk.text:
+            email_analysis += f"Analysis: {chunk.text}\n"
+
+    if not email_analysis:
+        email_analysis = "No sensitive data detected in the email headers."
+
+    return email_analysis
 
 
 # Define the route for the homepage
@@ -73,13 +60,19 @@ def analyze_url(url):
 def index():
     justification = ""
     normalized_url = ""
+    email_analysis = ""
     
     if request.method == "POST":
-        url = request.form.get("url")
-        normalized_url = url.rstrip('/')
-        justification = analyze_url(normalized_url)
+        if 'url' in request.form:
+            url = request.form.get("url")
+            normalized_url = url.rstrip('/')
+            justification = analyze_url(normalized_url)
+        
+        elif 'email_headers' in request.form:
+            email_headers = request.form.get("email_headers")
+            email_analysis = analyze_email_headers(email_headers)
     
-    return render_template("index.html", justification=justification, normalized_url=normalized_url)
+    return render_template("index.html", justification=justification, normalized_url=normalized_url, email_analysis=email_analysis)
 
 
 # Run the app
