@@ -50,22 +50,12 @@
             background-color: #e9ecef;
             border-radius: 5px;
         }
-        .feature-btn {
-            width: 48%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #17a2b8;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 4%;
+        .justification ul {
+            list-style-type: none;
+            padding-left: 0;
         }
-        .feature-btn:hover {
-            background-color: #138496;
-        }
-        .feature-btn:last-child {
-            margin-right: 0;
+        .justification li {
+            padding: 5px 0;
         }
         .alert {
             padding: 10px;
@@ -89,20 +79,13 @@
         {% if justification %}
         <div class="justification">
             <h3>Justification for URL: {{ normalized_url }}</h3>
-            <p>{{ justification }}</p>
+            <ul>
+                {% for line in justification %}
+                    <li>{{ line }}</li>
+                {% endfor %}
+            </ul>
         </div>
         {% endif %}
-
-        <!-- Feature Buttons -->
-        <div>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Urls from OpenPhish</button>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Ingest to Abso</button>
-        </div>
-
-        <!-- Alert for features not enabled -->
-        <div id="feature-alert" class="alert" style="display: none;">
-            Feature not enabled.
-        </div>
     </div>
 
 </body>
