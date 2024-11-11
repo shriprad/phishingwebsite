@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing URL Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .small-button {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-top: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .small-button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Maintains formatting and wraps text */
+            max-height: 400px; /* Set a max height to prevent overflow */
+            overflow-y: auto; /* Allows scrolling if content exceeds max height */
+        }
+        .result h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .result p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+        }
+        .result pre {
+            font-size: 14px;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+    <script>
+        // Function to show pop-up
+        function showPopup(message) {
+            alert(message);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Phishing URL Analyzer</h1>
+        <form method="POST">
+            <label for="url">Enter URL to analyze:</label>
+            <input type="text" id="url" name="url" required value="{{ request.form.get('url') }}">
+            <button type="submit">Analyze URL</button>
+        </form>
+
+        <!-- Extra buttons below the Analyze URL button -->
+        <button class="small-button" onclick="showPopup('Extract from OpenPhish and Analyze')">Extract from OpenPhish and Analyze</button>
+        <button class="small-button" onclick="showPopup('Extract and analyze and ingest to abso.')">Extract and Analyze and Ingest to Abso</button>
+        
+        {% if normalized_url %}
+        <div class="result">
+            <h3>Normalized URL:</h3>
+            <p>{{ normalized_url }}</p>
+        </div>
+        {% endif %}
+
+        {% if justification %}
+        <div class="result">
+            <h3>Justification:</h3>
+            <pre>{{ justification }}</pre>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
