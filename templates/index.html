@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vimarsh - Phishing Detector</title>
+    <title>Phishing Detector</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -44,43 +44,21 @@
         button:hover {
             background-color: #0056b3;
         }
-        .justification {
+        .justification, .email-analysis {
             margin-top: 20px;
             padding: 10px;
             background-color: #e9ecef;
             border-radius: 5px;
         }
-        .feature-btn {
-            width: 48%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #17a2b8;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 4%;
-        }
-        .feature-btn:hover {
-            background-color: #138496;
-        }
-        .feature-btn:last-child {
-            margin-right: 0;
-        }
-        .alert {
-            padding: 10px;
-            margin-top: 20px;
-            background-color: #ffc107;
-            color: black;
-            border-radius: 5px;
-            text-align: center;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Vimarsh - Phishing URL Detection</h1>
+        <h1>Phishing URL Detection</h1>
         <form method="POST">
             <input type="text" name="url" placeholder="Enter URL to analyze" required>
             <button type="submit">Analyze URL</button>
@@ -93,17 +71,28 @@
         </div>
         {% endif %}
 
-        <!-- Feature Buttons -->
-        <div>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Urls from OpenPhish</button>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Ingest to Abso</button>
+        <button id="piiButton" onclick="showPiiForm()">PII Redactor</button>
+
+        <div id="piiForm" class="hidden">
+            <form method="POST" action="/pii" id="piiFormSubmit">
+                <textarea name="email_headers" rows="6" placeholder="Enter email headers here..." required></textarea><br>
+                <button type="submit">Submit for Analysis</button>
+            </form>
         </div>
 
-        <!-- Alert for features not enabled -->
-        <div id="feature-alert" class="alert" style="display: none;">
-            Feature not enabled.
+        {% if email_analysis %}
+        <div class="email-analysis">
+            <h3>Email Redaction Analysis</h3>
+            <p>{{ email_analysis }}</p>
         </div>
+        {% endif %}
     </div>
 
+    <script>
+        function showPiiForm() {
+            var form = document.getElementById('piiForm');
+            form.classList.toggle('hidden');
+        }
+    </script>
 </body>
 </html>
