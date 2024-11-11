@@ -50,12 +50,22 @@
             background-color: #e9ecef;
             border-radius: 5px;
         }
-        .justification ul {
-            list-style-type: none;
-            padding-left: 0;
+        .feature-btn {
+            width: 48%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 4%;
         }
-        .justification li {
-            padding: 5px 0;
+        .feature-btn:hover {
+            background-color: #138496;
+        }
+        .feature-btn:last-child {
+            margin-right: 0;
         }
         .alert {
             padding: 10px;
@@ -70,7 +80,7 @@
 <body>
 
     <div class="container">
-        <h1>Vimarsh - Phishing URL Detection</h1>
+        <h1>Vimarsh - Phishing URL Analyzer</h1>
         <form method="POST">
             <input type="text" name="url" placeholder="Enter URL to analyze" required>
             <button type="submit">Analyze URL</button>
@@ -79,13 +89,20 @@
         {% if justification %}
         <div class="justification">
             <h3>Justification for URL: {{ normalized_url }}</h3>
-            <ul>
-                {% for line in justification %}
-                    <li>{{ line }}</li>
-                {% endfor %}
-            </ul>
+            <p>{{ justification }}</p>
         </div>
         {% endif %}
+
+        <!-- Feature Buttons -->
+        <div>
+            <button class="feature-btn" onclick="alert('Feature not enabled')">Urls from OpenPhish</button>
+            <button class="feature-btn" onclick="alert('Feature not enabled')">Ingest to Abso</button>
+        </div>
+
+        <!-- Alert for features not enabled -->
+        <div id="feature-alert" class="alert" style="display: none;">
+            Feature not enabled.
+        </div>
     </div>
 
 </body>
