@@ -6,7 +6,7 @@ from flask import Flask, render_template, request
 app = Flask(__name__)
 
 # Set your API Key for Google Generative AI
-os.environ['GOOGLE_API_KEY'] = 'YOUR_GOOGLE_API_KEY'  # Replace with your actual API key
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'  # Replace with your actual API key
 
 # Configure the Generative AI API
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
