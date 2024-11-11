@@ -13,55 +13,74 @@ genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 # Function to analyze a URL and return justification for phishing suspicion
 def analyze_url(url):
+    # Remove trailing slashes from the URL to avoid inconsistency
     url = url.rstrip('/')
+    
+    # Start a chat session with Generative AI
     model = genai.GenerativeModel('gemini-pro')
     chat = model.start_chat(history=[])
+    
+    # Create a prompt for the analysis
     prompt = f"Is this URL a phishing attempt: {url}?"
+    
+    # Send the message and handle the response
     response = chat.send_message(prompt, stream=True)
+    
+    # Variable to track justification
     justification = ""
+    
+    # Process the response
     for chunk in response:
         if hasattr(chunk, 'text') and chunk.text:
             justification += f"Response: {chunk.text}\n"
         elif hasattr(chunk, 'safety_ratings') and chunk.safety_ratings:
             for rating in chunk.safety_ratings:
                 justification += f"Category: {rating.category}, Probability: {rating.probability}\n"
+                # Add justification based on the safety category
                 if rating.category == 'HARM_CATEGORY_DANGEROUS_CONTENT':
-                    justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
+                    if isinstance(rating.probability, str):  # If probability is a string
+                        if rating.probability == 'HIGH':
+                            justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
+                        elif rating.probability == 'MEDIUM':
+                            justification += "Justification: The content is moderately dangerous, indicating a moderate likelihood of phishing.\n"
+                        elif rating.probability == 'LOW':
+                            justification += "Justification: The content is somewhat dangerous, but the likelihood of phishing is low.\n"
+                    elif isinstance(rating.probability, (int, float)):  # If probability is numeric
+                        if rating.probability >= 0.75:
+                            justification += "Justification: The content has a high probability of being dangerous, indicating a high likelihood of phishing.\n"
+                        elif rating.probability >= 0.5:
+                            justification += "Justification: The content has a moderate probability of being dangerous, indicating a moderate likelihood of phishing.\n"
+                        elif rating.probability >= 0.25:
+                            justification += "Justification: The content has a low probability of being dangerous, indicating a lower likelihood of phishing.\n"
+                # Handle other suspicious categories
+                elif rating.category in ['HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_HARASSMENT']:
+                    if isinstance(rating.probability, str):
+                        if rating.probability == 'HIGH' or rating.probability == 'MEDIUM':
+                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
+                    elif isinstance(rating.probability, (int, float)):
+                        if rating.probability >= 0.5:
+                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
+
+    # If no text or safety ratings found
     if not justification:
         justification = "No sufficient information to determine phishing suspicion."
+
     return justification
 
-# Function to analyze email headers for PII redaction
-def analyze_email_headers(email_headers):
-    model = genai.GenerativeModel('gemini-pro')
-    chat = model.start_chat(history=[])
-    prompt = f"Analyze the following email headers and identify any sensitive PII information like TO address, FROM address, SMTP IP, etc. Why should each be redacted?\n\n{email_headers}"
-    response = chat.send_message(prompt, stream=True)
-    pii_justification = ""
-    for chunk in response:
-        if hasattr(chunk, 'text') and chunk.text:
-            pii_justification += f"Response: {chunk.text}\n"
-    if not pii_justification:
-        pii_justification = "No sensitive PII detected."
-    return pii_justification
 
 # Define the route for the homepage
 @app.route("/", methods=["GET", "POST"])
 def index():
     justification = ""
     normalized_url = ""
+    
     if request.method == "POST":
         url = request.form.get("url")
         normalized_url = url.rstrip('/')
         justification = analyze_url(normalized_url)
+    
     return render_template("index.html", justification=justification, normalized_url=normalized_url)
 
-# Define the route for PII redaction feature
-@app.route("/pii-redactor", methods=["POST"])
-def pii_redactor():
-    email_headers = request.form.get("email_headers")
-    pii_justification = analyze_email_headers(email_headers)
-    return render_template("index.html", pii_justification=pii_justification)
 
 # Run the app
 if __name__ == "__main__":
