@@ -13,67 +13,55 @@ genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 # Function to analyze a URL and return justification for phishing suspicion
 def analyze_url(url):
-    url = url.rstrip('/')  # Normalize URL
+    url = url.rstrip('/')
     model = genai.GenerativeModel('gemini-pro')
     chat = model.start_chat(history=[])
     prompt = f"Is this URL a phishing attempt: {url}?"
     response = chat.send_message(prompt, stream=True)
-    
     justification = ""
-    
     for chunk in response:
         if hasattr(chunk, 'text') and chunk.text:
             justification += f"Response: {chunk.text}\n"
         elif hasattr(chunk, 'safety_ratings') and chunk.safety_ratings:
             for rating in chunk.safety_ratings:
                 justification += f"Category: {rating.category}, Probability: {rating.probability}\n"
-                # Add justification based on the safety category
                 if rating.category == 'HARM_CATEGORY_DANGEROUS_CONTENT':
-                    justification += f"Justification: {rating.category} with probability {rating.probability}\n"
-    
+                    justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
     if not justification:
         justification = "No sufficient information to determine phishing suspicion."
-    
     return justification
 
-# Function to analyze email headers and return PII redaction reasons
-def analyze_email_headers(headers):
+# Function to analyze email headers for PII redaction
+def analyze_email_headers(email_headers):
     model = genai.GenerativeModel('gemini-pro')
     chat = model.start_chat(history=[])
-    prompt = f"Analyze these email headers and detect any personal identifiable information (PII) or sensitive data: {headers}"
+    prompt = f"Analyze the following email headers and identify any sensitive PII information like TO address, FROM address, SMTP IP, etc. Why should each be redacted?\n\n{email_headers}"
     response = chat.send_message(prompt, stream=True)
-
-    email_analysis = ""
-
+    pii_justification = ""
     for chunk in response:
         if hasattr(chunk, 'text') and chunk.text:
-            email_analysis += f"Analysis: {chunk.text}\n"
-
-    if not email_analysis:
-        email_analysis = "No sensitive data detected in the email headers."
-
-    return email_analysis
-
+            pii_justification += f"Response: {chunk.text}\n"
+    if not pii_justification:
+        pii_justification = "No sensitive PII detected."
+    return pii_justification
 
 # Define the route for the homepage
 @app.route("/", methods=["GET", "POST"])
 def index():
     justification = ""
     normalized_url = ""
-    email_analysis = ""
-    
     if request.method == "POST":
-        if 'url' in request.form:
-            url = request.form.get("url")
-            normalized_url = url.rstrip('/')
-            justification = analyze_url(normalized_url)
-        
-        elif 'email_headers' in request.form:
-            email_headers = request.form.get("email_headers")
-            email_analysis = analyze_email_headers(email_headers)
-    
-    return render_template("index.html", justification=justification, normalized_url=normalized_url, email_analysis=email_analysis)
+        url = request.form.get("url")
+        normalized_url = url.rstrip('/')
+        justification = analyze_url(normalized_url)
+    return render_template("index.html", justification=justification, normalized_url=normalized_url)
 
+# Define the route for PII redaction feature
+@app.route("/pii-redactor", methods=["POST"])
+def pii_redactor():
+    email_headers = request.form.get("email_headers")
+    pii_justification = analyze_email_headers(email_headers)
+    return render_template("index.html", pii_justification=pii_justification)
 
 # Run the app
 if __name__ == "__main__":
