@@ -69,58 +69,146 @@
             background-color: var(--primary-color);
             color: white;
             padding: 0.75rem 1.5rem;
-            font-size: 1rem;
             border: none;
             border-radius: 8px;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
 
         button:hover {
             background-color: #1d4ed8;
         }
 
-        .results {
-            background-color: #f8fafc;
-            border-radius: 12px;
-            padding: 1.5rem;
-            white-space: pre-wrap;
-        }
-
         .loading {
             text-align: center;
+            padding: 2rem;
             display: none;
         }
 
-        .error {
+        .loading.active {
+            display: block;
+        }
+
+        .analysis-result {
+            margin-top: 2rem;
+        }
+
+        .url-components {
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .component-item {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .analysis-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            white-space: pre-wrap;
+        }
+
+        .risk-high {
             color: var(--danger-color);
-            font-weight: bold;
+            font-weight: 600;
+        }
+
+        .risk-medium {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .risk-low {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .analysis-time {
+            text-align: right;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Advanced Phishing URL Analyzer</h1>
+        
         <div class="search-box">
-            <form method="POST">
-                <div class="input-group">
-                    <input type="text" name="url" placeholder="Enter URL to analyze" required>
-                    <button type="submit">Analyze</button>
-                </div>
+            <form method="POST" class="input-group">
+                <input type="text" name="url" placeholder="Enter URL to analyze..." required>
+                <button type="submit">Analyze</button>
             </form>
         </div>
-        <div class="loading">Analyzing...</div>
-        {% if analysis_result %}
-            <div class="results">
-                <h2>Analysis Results:</h2>
-                {% if analysis_result.error %}
-                    <p class="error">{{ analysis_result.error }}</p>
-                {% else %}
-                    <p>Analysis Time: {{ analysis_result.analysis_time }} seconds</p>
-                    <pre>{{ analysis_result.analysis }}</pre>
-                {% endif %}
+
+        <div id="loading" class="loading">
+            <div class="loading-content">
+                Performing comprehensive security analysis...
+                <div class="loading-subtext">This may take a few seconds</div>
             </div>
+        </div>
+
+        {% if analysis_result %}
+        <div class="analysis-result">
+            {% if analysis_result.error %}
+            <div class="error-message">
+                {{ analysis_result.error }}
+            </div>
+            {% else %}
+            <div class="url-components">
+                <h2>URL Structure Analysis</h2>
+                <div class="component-grid">
+                    {% for key, value in analysis_result.url_components.items() %}
+                    {% if value %}
+                    <div class="component-item">
+                        <strong>{{ key|title }}:</strong>
+                        <div>{{ value }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="analysis-content">
+                {{ analysis_result.analysis | safe }}
+            </div>
+
+            <div class="analysis-time">
+                Analysis completed in {{ analysis_result.analysis_time }} seconds
+            </div>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading').classList.add('active');
+        });
+    </script>
 </body>
 </html>
