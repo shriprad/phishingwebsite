@@ -1,11 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import os
 import requests
 
 app = Flask(__name__)
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'  # Replace with your actual API key
 
-# Define the 16 features you need
+# Replace with your actual API key
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+
+# Define the 16 features for analysis
 FEATURES = [
     "Page Reputation Score", "Phishing Detection", "Malware Detection",
     "SSL/TLS Status", "Domain Age", "Hosting Provider Reputation",
@@ -15,23 +17,28 @@ FEATURES = [
     "Cookie Policy Detection", "Trustworthiness Score", "User Reviews and Ratings"
 ]
 
+# Route for the root URL to render the form
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Function to analyze the URL
 def analyze_url(url):
-    # Make request to Gemini AI API with necessary parameters
     api_key = os.getenv('GOOGLE_API_KEY')
     api_url = f"https://gemini.googleapis.com/v1/analyze?url={url}&features={','.join(FEATURES)}&key={api_key}"
     
     response = requests.get(api_url)
     data = response.json()
 
-    # Parse the data to ensure each feature is handled
+    # Process the data to ensure each feature is handled
     analysis_results = {feature: data.get(feature, "Not Available") for feature in FEATURES}
     
-    # Example processing for demonstration purposes
     return {
         "url": url,
         "analysis_results": analysis_results
     }
 
+# Route to handle URL analysis
 @app.route('/analyze', methods=['POST'])
 def analyze():
     request_data = request.get_json()
@@ -40,10 +47,10 @@ def analyze():
     if not url:
         return jsonify({"error": "URL is required"}), 400
     
-    # Call the analyze_url function
     analysis = analyze_url(url)
     
     return jsonify(analysis)
 
+# Run the app
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
