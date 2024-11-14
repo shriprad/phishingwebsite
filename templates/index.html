@@ -3,46 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Analysis with Gemini AI</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>Vimarsh - Phishing Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 50%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .justification {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .feature-btn {
+            width: 48%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 4%;
+        }
+        .feature-btn:hover {
+            background-color: #138496;
+        }
+        .feature-btn:last-child {
+            margin-right: 0;
+        }
+        .alert {
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #ffc107;
+            color: black;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>Analyze URL with Gemini AI</h1>
-    <form id="analyze-form">
-        <label for="url">Enter URL:</label>
-        <input type="text" id="url" name="url" required><br><br>
 
-        <button type="submit">Analyze</button>
-    </form>
-    
-    <h2>Analysis Result:</h2>
-    <pre id="result">No analysis yet.</pre>
+    <div class="container">
+        <h1>Vimarsh - Phishing URL Analyzer</h1>
+        <form method="POST">
+            <input type="text" name="url" placeholder="Enter URL to analyze" required>
+            <button type="submit">Analyze URL</button>
+        </form>
 
-    <script>
-        $(document).ready(function() {
-            $('#analyze-form').on('submit', function(e) {
-                e.preventDefault();
-                
-                const url = $('#url').val();
-                
-                if (url) {
-                    $.ajax({
-                        url: '/analyze',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ url: url }),
-                        success: function(response) {
-                            $('#result').text(JSON.stringify(response, null, 2));
-                        },
-                        error: function() {
-                            $('#result').text('An error occurred during the analysis.');
-                        }
-                    });
-                } else {
-                    $('#result').text('Please enter a URL.');
-                }
-            });
-        });
-    </script>
+        {% if justification %}
+        <div class="justification">
+            <h3>Justification for URL: {{ normalized_url }}</h3>
+            <p>{{ justification }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Feature Buttons -->
+        <div>
+            <button class="feature-btn" onclick="alert('Feature not enabled')">Urls from OpenPhish</button>
+            <button class="feature-btn" onclick="alert('Feature not enabled')">Ingest to Abso</button>
+        </div>
+
+        <!-- Alert for features not enabled -->
+        <div id="feature-alert" class="alert" style="display: none;">
+            Feature not enabled.
+        </div>
+    </div>
+
 </body>
 </html>
