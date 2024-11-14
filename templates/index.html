@@ -3,84 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Phishing Analysis</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #analysisResults {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            white-space: pre-wrap;
-        }
-    </style>
+    <title>URL Analysis with Gemini AI</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h2>URL Phishing Analysis</h2>
-        <p>Enter the URL you want to analyze for phishing detection:</p>
-        <input type="text" id="urlInput" placeholder="Enter URL here...">
-        <button onclick="analyzeUrl()">Analyze</button>
-        <div id="analysisResults"></div>
-    </div>
+    <h1>Analyze URL with Gemini AI</h1>
+    <form id="analyze-form">
+        <label for="url">Enter URL:</label>
+        <input type="text" id="url" name="url" required><br><br>
+
+        <button type="submit">Analyze</button>
+    </form>
+    
+    <h2>Analysis Result:</h2>
+    <pre id="result">No analysis yet.</pre>
 
     <script>
-        function analyzeUrl() {
-            const url = document.getElementById("urlInput").value;
-
-            if (!url) {
-                alert("Please enter a URL.");
-                return;
-            }
-
-            // Send POST request to backend
-            fetch('/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: url })
-            })
-            .then(response => response.json())
-            .then(data => {
-                let output = JSON.stringify(data, null, 2);  // format the result for better display
-                document.getElementById("analysisResults").textContent = output;
-            })
-            .catch(error => {
-                document.getElementById("analysisResults").textContent = `Error: ${error.message}`;
+        $(document).ready(function() {
+            $('#analyze-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const url = $('#url').val();
+                
+                if (url) {
+                    $.ajax({
+                        url: '/analyze',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ url: url }),
+                        success: function(response) {
+                            $('#result').text(JSON.stringify(response, null, 2));
+                        },
+                        error: function() {
+                            $('#result').text('An error occurred during the analysis.');
+                        }
+                    });
+                } else {
+                    $('#result').text('Please enter a URL.');
+                }
             });
-        }
+        });
     </script>
 </body>
 </html>
