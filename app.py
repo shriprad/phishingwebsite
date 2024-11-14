@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 
 # Set your Google API Key from environment variables
-API_KEY = os.environ.get('GOOGLE_API_KEY')
+API_KEY = os.environ.get('AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw')
 GEMINI_API_ENDPOINT = "https://gemini.googleapis.com/v1/url:analyze"  # Placeholder URL
 
 def analyze_url(url, features):
