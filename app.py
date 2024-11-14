@@ -1,87 +1,83 @@
 import os
 import google.generativeai as genai
 from flask import Flask, render_template, request
+import urllib.parse
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Set your API Key for Google Generative AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'  # Replace with your actual API key
-
-# Configure the Generative AI API
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
-# Function to analyze a URL and return justification for phishing suspicion
 def analyze_url(url):
-    # Remove trailing slashes from the URL to avoid inconsistency
-    url = url.rstrip('/')
-    
-    # Start a chat session with Generative AI
-    model = genai.GenerativeModel('gemini-pro')
-    chat = model.start_chat(history=[])
-    
-    # Create a prompt for the analysis
-    prompt = f"Is this URL a phishing attempt: {url}?"
-    
-    # Send the message and handle the response
-    response = chat.send_message(prompt, stream=True)
-    
-    # Variable to track justification
-    justification = ""
-    
-    # Process the response
-    for chunk in response:
-        if hasattr(chunk, 'text') and chunk.text:
-            justification += f"Response: {chunk.text}\n"
-        elif hasattr(chunk, 'safety_ratings') and chunk.safety_ratings:
-            for rating in chunk.safety_ratings:
-                justification += f"Category: {rating.category}, Probability: {rating.probability}\n"
-                # Add justification based on the safety category
-                if rating.category == 'HARM_CATEGORY_DANGEROUS_CONTENT':
-                    if isinstance(rating.probability, str):  # If probability is a string
-                        if rating.probability == 'HIGH':
-                            justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability == 'MEDIUM':
-                            justification += "Justification: The content is moderately dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability == 'LOW':
-                            justification += "Justification: The content is somewhat dangerous, but the likelihood of phishing is low.\n"
-                    elif isinstance(rating.probability, (int, float)):  # If probability is numeric
-                        if rating.probability >= 0.75:
-                            justification += "Justification: The content has a high probability of being dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability >= 0.5:
-                            justification += "Justification: The content has a moderate probability of being dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability >= 0.25:
-                            justification += "Justification: The content has a low probability of being dangerous, indicating a lower likelihood of phishing.\n"
-                # Handle other suspicious categories
-                elif rating.category in ['HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_HARASSMENT']:
-                    if isinstance(rating.probability, str):
-                        if rating.probability == 'HIGH' or rating.probability == 'MEDIUM':
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
-                    elif isinstance(rating.probability, (int, float)):
-                        if rating.probability >= 0.5:
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
+    try:
+        # Create a detailed prompt for Gemini AI to analyze all features
+        analysis_prompt = f"""Analyze this URL for phishing: {url}
+        
+        Please check and explain the following features in detail:
+        1. Is there an IP address in the URL? This is suspicious as legitimate sites rarely use IP addresses.
+        2. Is there an @ symbol in the URL? This can be used to trick browsers.
+        3. How many dots are in the hostname? More than 3 dots is suspicious.
+        4. Are there hyphens (-) in the domain? These are rarely used in legitimate URLs.
+        5. Is there URL redirection using '//' in the path?
+        6. Is there an HTTPS token in the domain part (not at the start)?
+        7. Does it use email submission methods (mail() or mailto:)?
+        8. Is it using URL shortening services?
+        9. Is the hostname length greater than 25 characters?
+        10. Are there sensitive words like 'secure', 'account', 'banking', 'paypal', etc.?
+        11. Are there more than 5 slashes in the URL?
+        12. Are there Unicode characters in the URL?
+        13. For SSL certificates (if https), how old is it?
+        14. Analyze anchor tags - are they pointing to different domains?
+        15. Check for invisible iframes
+        16. What is the website's Alexa rank?
 
-    # If no text or safety ratings found
-    if not justification:
-        justification = "No sufficient information to determine phishing suspicion."
+        For each feature, provide:
+        1. Whether it's suspicious (YES/NO)
+        2. Brief explanation why
+        3. Risk score (0-10)
 
-    return justification
+        Finally, provide:
+        1. Overall phishing probability score (0-100%)
+        2. Risk level (Low/Medium/High)
+        3. Detailed justification for the assessment
+        """
 
+        # Get Gemini AI analysis
+        model = genai.GenerativeModel('gemini-pro')
+        chat = model.start_chat(history=[])
+        response = chat.send_message(analysis_prompt)
 
-# Define the route for the homepage
+        # Parse URL components for display
+        parsed_url = urllib.parse.urlparse(url)
+        url_parts = {
+            'scheme': parsed_url.scheme,
+            'netloc': parsed_url.netloc,
+            'path': parsed_url.path,
+            'params': parsed_url.params,
+            'query': parsed_url.query,
+            'fragment': parsed_url.fragment
+        }
+
+        return {
+            'url': url,
+            'url_parts': url_parts,
+            'analysis': response.text
+        }
+
+    except Exception as e:
+        return {
+            'url': url,
+            'error': str(e),
+            'analysis': 'Analysis failed due to an error'
+        }
+
 @app.route("/", methods=["GET", "POST"])
 def index():
-    justification = ""
-    normalized_url = ""
-    
+    analysis_result = None
     if request.method == "POST":
         url = request.form.get("url")
-        normalized_url = url.rstrip('/')
-        justification = analyze_url(normalized_url)
-    
-    return render_template("index.html", justification=justification, normalized_url=normalized_url)
+        analysis_result = analyze_url(url)
+    return render_template("index.html", analysis_result=analysis_result)
 
-
-# Run the app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
