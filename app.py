@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import os
 import requests
 
@@ -34,6 +34,10 @@ def analyze_url(url):
         "analysis_results": analysis_results
     }
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     request_data = request.get_json()
@@ -46,10 +50,6 @@ def analyze():
     analysis = analyze_url(url)
     
     return jsonify(analysis)
-
-@app.route('/')
-def index():
-    return "Welcome to the URL Analyzer API!"
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=10000, debug=True)
