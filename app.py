@@ -4,8 +4,6 @@ import urllib.parse
 import tldextract
 import google.generativeai as genai
 from flask import Flask, render_template, request
-import requests
-from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -36,22 +34,8 @@ def analyze_url(url):
         # Extract URL components for analysis
         url_components = extract_url_components(url)
         
-        # Fetch the webpage content
-        response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Extract relevant content for analysis
-        page_title = soup.title.string if soup.title else "No title"
-        meta_description = soup.find('meta', attrs={'name': 'description'})
-        meta_description = meta_description['content'] if meta_description else "No description"
-        visible_text = ' '.join(soup.stripped_strings)[:1000]  # First 1000 characters of visible text
-        
-        # Extract image URLs, focusing on potential logos
-        image_urls = [img['src'] for img in soup.find_all('img', src=True)]
-        potential_logos = [img for img in image_urls if 'logo' in img.lower()]
-        
         # Craft a comprehensive analysis prompt
-        analysis_prompt = f"""Perform a detailed phishing URL and content analysis for: {url}
+        analysis_prompt = f"""Perform a detailed phishing URL analysis for: {url}
 
         URL Components:
         - Full URL: {url_components['full_url']}
@@ -61,17 +45,10 @@ def analyze_url(url):
         - Path: {url_components['path']}
         - Query Parameters: {url_components['query']}
 
-        Page Content:
-        - Title: {page_title}
-        - Meta Description: {meta_description}
-        - Visible Text Sample: {visible_text}
-        - Potential Logo URLs: {', '.join(potential_logos[:5])}
-
         Please provide a comprehensive security analysis including:
 
         1. Brand Impersonation Analysis:
-        - Identify any legitimate brands being impersonated based on URL and page content
-        - Look for brand names, logos, and styling in the content
+        - Identify any legitimate brands being impersonated
         - Explain the impersonation techniques used
         - Compare with legitimate domain patterns for identified brands
         
@@ -87,7 +64,7 @@ def analyze_url(url):
         - Redirect patterns
         
         4. Social Engineering Indicators:
-        - Urgency or pressure tactics in URL or content
+        - Urgency or pressure tactics in URL
         - Brand-related keywords
         - Security-related keywords
         - Common phishing patterns
