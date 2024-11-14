@@ -1,87 +1,72 @@
 import os
-import google.generativeai as genai
-from flask import Flask, render_template, request
+import requests
+from flask import Flask, render_template, request, jsonify
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Set your API Key for Google Generative AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'  # Replace with your actual API key
+# Set your Google API Key from environment variables
+API_KEY = os.environ.get('GOOGLE_API_KEY')
+GEMINI_API_ENDPOINT = "https://gemini.googleapis.com/v1/url:analyze"  # Placeholder URL
 
-# Configure the Generative AI API
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+def analyze_url(url, features):
+    try:
+        # Prepare the payload with URL and features
+        payload = {
+            "url": url,
+            "features": features
+        }
 
-# Function to analyze a URL and return justification for phishing suspicion
-def analyze_url(url):
-    # Remove trailing slashes from the URL to avoid inconsistency
-    url = url.rstrip('/')
+        # Make request to Google Gemini API
+        response = requests.post(
+            GEMINI_API_ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=payload
+        )
+
+        # Raise an exception if the request failed
+        response.raise_for_status()
+
+        # Parse the response data
+        data = response.json()
+        justification = data.get('justification', 'No analysis result available')
+        
+        return justification
     
-    # Start a chat session with Generative AI
-    model = genai.GenerativeModel('gemini-pro')
-    chat = model.start_chat(history=[])
-    
-    # Create a prompt for the analysis
-    prompt = f"Is this URL a phishing attempt: {url}?"
-    
-    # Send the message and handle the response
-    response = chat.send_message(prompt, stream=True)
-    
-    # Variable to track justification
-    justification = ""
-    
-    # Process the response
-    for chunk in response:
-        if hasattr(chunk, 'text') and chunk.text:
-            justification += f"Response: {chunk.text}\n"
-        elif hasattr(chunk, 'safety_ratings') and chunk.safety_ratings:
-            for rating in chunk.safety_ratings:
-                justification += f"Category: {rating.category}, Probability: {rating.probability}\n"
-                # Add justification based on the safety category
-                if rating.category == 'HARM_CATEGORY_DANGEROUS_CONTENT':
-                    if isinstance(rating.probability, str):  # If probability is a string
-                        if rating.probability == 'HIGH':
-                            justification += "Justification: The content is highly dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability == 'MEDIUM':
-                            justification += "Justification: The content is moderately dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability == 'LOW':
-                            justification += "Justification: The content is somewhat dangerous, but the likelihood of phishing is low.\n"
-                    elif isinstance(rating.probability, (int, float)):  # If probability is numeric
-                        if rating.probability >= 0.75:
-                            justification += "Justification: The content has a high probability of being dangerous, indicating a high likelihood of phishing.\n"
-                        elif rating.probability >= 0.5:
-                            justification += "Justification: The content has a moderate probability of being dangerous, indicating a moderate likelihood of phishing.\n"
-                        elif rating.probability >= 0.25:
-                            justification += "Justification: The content has a low probability of being dangerous, indicating a lower likelihood of phishing.\n"
-                # Handle other suspicious categories
-                elif rating.category in ['HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_HARASSMENT']:
-                    if isinstance(rating.probability, str):
-                        if rating.probability == 'HIGH' or rating.probability == 'MEDIUM':
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
-                    elif isinstance(rating.probability, (int, float)):
-                        if rating.probability >= 0.5:
-                            justification += f"Justification: The content is flagged for {rating.category.lower()}, which is suspicious.\n"
+    except requests.exceptions.RequestException as e:
+        return f"Error analyzing URL: {str(e)}"
 
-    # If no text or safety ratings found
-    if not justification:
-        justification = "No sufficient information to determine phishing suspicion."
-
-    return justification
-
-
-# Define the route for the homepage
-@app.route("/", methods=["GET", "POST"])
+@app.route('/')
 def index():
-    justification = ""
-    normalized_url = ""
-    
-    if request.method == "POST":
-        url = request.form.get("url")
-        normalized_url = url.rstrip('/')
-        justification = analyze_url(normalized_url)
-    
-    return render_template("index.html", justification=justification, normalized_url=normalized_url)
+    return render_template('index.html')
 
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    url = request.form['url']
+    # Collecting all 16 features from the form data
+    features = {
+        "feature1": request.form.get('feature1'),
+        "feature2": request.form.get('feature2'),
+        "feature3": request.form.get('feature3'),
+        "feature4": request.form.get('feature4'),
+        "feature5": request.form.get('feature5'),
+        "feature6": request.form.get('feature6'),
+        "feature7": request.form.get('feature7'),
+        "feature8": request.form.get('feature8'),
+        "feature9": request.form.get('feature9'),
+        "feature10": request.form.get('feature10'),
+        "feature11": request.form.get('feature11'),
+        "feature12": request.form.get('feature12'),
+        "feature13": request.form.get('feature13'),
+        "feature14": request.form.get('feature14'),
+        "feature15": request.form.get('feature15'),
+        "feature16": request.form.get('feature16'),
+    }
+    
+    justification = analyze_url(url, features)
+    return jsonify({"result": justification})
 
-# Run the app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
+    app.run(debug=True)
