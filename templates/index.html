@@ -3,107 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vimarsh - Phishing Detector</title>
+    <title>Vimarsh - AI-Powered Phishing Detector</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
             color: #333;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            line-height: 1.6;
         }
         .container {
-            width: 50%;
-            margin: 50px auto;
-            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
         }
         h1 {
+            color: #2c3e50;
             text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin: 20px 0;
         }
         input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            margin: 10px 0;
+            width: 100%;
+            padding: 12px;
             font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
         }
         button {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #007bff;
+            background-color: #2980b9;
             color: white;
+            padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #3498db;
         }
-        .justification {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #e9ecef;
-            border-radius: 5px;
+        .analysis-result {
+            margin-top: 30px;
         }
-        .feature-btn {
-            width: 48%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #17a2b8;
-            color: white;
-            border: none;
+        .url-breakdown {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .url-part {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #fff;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            cursor: pointer;
-            margin-right: 4%;
         }
-        .feature-btn:hover {
-            background-color: #138496;
+        .analysis-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
         }
-        .feature-btn:last-child {
-            margin-right: 0;
-        }
-        .alert {
-            padding: 10px;
+        .feature-analysis {
             margin-top: 20px;
-            background-color: #ffc107;
-            color: black;
-            border-radius: 5px;
+        }
+        .feature-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .loading {
             text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .loading.active {
+            display: block;
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>Vimarsh - Phishing URL Analyzer</h1>
-        <form method="POST">
+        <h1>Vimarsh - AI-Powered Phishing URL Analyzer</h1>
+        
+        <form method="POST" class="input-group">
             <input type="text" name="url" placeholder="Enter URL to analyze" required>
             <button type="submit">Analyze URL</button>
         </form>
 
-        {% if justification %}
-        <div class="justification">
-            <h3>Justification for URL: {{ normalized_url }}</h3>
-            <p>{{ justification }}</p>
+        <div id="loading" class="loading">
+            Analyzing URL using AI... Please wait...
+        </div>
+
+        {% if analysis_result %}
+        <div class="analysis-result">
+            <h2>Analysis Results for: {{ analysis_result.url }}</h2>
+            
+            <div class="url-breakdown">
+                <h3>URL Structure Analysis:</h3>
+                {% for part, value in analysis_result.url_parts.items() %}
+                {% if value %}
+                <div class="url-part">
+                    <strong>{{ part }}:</strong> {{ value }}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="feature-analysis">
+                <h3>Detailed AI Analysis:</h3>
+                <div class="analysis-content">
+                    {{ analysis_result.analysis | safe }}
+                </div>
+            </div>
         </div>
         {% endif %}
-
-        <!-- Feature Buttons -->
-        <div>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Urls from OpenPhish</button>
-            <button class="feature-btn" onclick="alert('Feature not enabled')">Ingest to Abso</button>
-        </div>
-
-        <!-- Alert for features not enabled -->
-        <div id="feature-alert" class="alert" style="display: none;">
-            Feature not enabled.
-        </div>
     </div>
 
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading').classList.add('active');
+        });
+    </script>
 </body>
 </html>
