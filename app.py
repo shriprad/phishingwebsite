@@ -1,72 +1,52 @@
+from flask import Flask, request, jsonify
 import os
+import google.auth  # Ensure you have the google-auth library
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 import requests
-from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'  # Replace with your actual API key
 
-# Set your Google API Key from environment variables
-API_KEY = os.environ.get('AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw')
-GEMINI_API_ENDPOINT = "https://gemini.googleapis.com/v1/url:analyze"  # Placeholder URL
+# Define the 16 features you need
+FEATURES = [
+    "Page Reputation Score", "Phishing Detection", "Malware Detection",
+    "SSL/TLS Status", "Domain Age", "Hosting Provider Reputation",
+    "Content Authenticity", "Redirection Analysis", "Suspicious Links",
+    "Contact Information Verification", "Social Media Presence",
+    "Privacy Policy Presence", "Terms of Service Presence",
+    "Cookie Policy Detection", "Trustworthiness Score", "User Reviews and Ratings"
+]
 
-def analyze_url(url, features):
-    try:
-        # Prepare the payload with URL and features
-        payload = {
-            "url": url,
-            "features": features
-        }
-
-        # Make request to Google Gemini API
-        response = requests.post(
-            GEMINI_API_ENDPOINT,
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=payload
-        )
-
-        # Raise an exception if the request failed
-        response.raise_for_status()
-
-        # Parse the response data
-        data = response.json()
-        justification = data.get('justification', 'No analysis result available')
-        
-        return justification
+def analyze_url(url):
+    # Make request to Gemini AI API with necessary parameters
+    api_key = os.getenv('GOOGLE_API_KEY')
+    api_url = f"https://gemini.googleapis.com/v1/analyze?url={url}&features={','.join(FEATURES)}&key={api_key}"
     
-    except requests.exceptions.RequestException as e:
-        return f"Error analyzing URL: {str(e)}"
+    response = requests.get(api_url)
+    data = response.json()
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    # Parse the data to ensure each feature is handled
+    analysis_results = {feature: data.get(feature, "Not Available") for feature in FEATURES}
+    
+    # Example processing for demonstration purposes
+    return {
+        "url": url,
+        "analysis_results": analysis_results
+    }
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    url = request.form['url']
-    # Collecting all 16 features from the form data
-    features = {
-        "feature1": request.form.get('feature1'),
-        "feature2": request.form.get('feature2'),
-        "feature3": request.form.get('feature3'),
-        "feature4": request.form.get('feature4'),
-        "feature5": request.form.get('feature5'),
-        "feature6": request.form.get('feature6'),
-        "feature7": request.form.get('feature7'),
-        "feature8": request.form.get('feature8'),
-        "feature9": request.form.get('feature9'),
-        "feature10": request.form.get('feature10'),
-        "feature11": request.form.get('feature11'),
-        "feature12": request.form.get('feature12'),
-        "feature13": request.form.get('feature13'),
-        "feature14": request.form.get('feature14'),
-        "feature15": request.form.get('feature15'),
-        "feature16": request.form.get('feature16'),
-    }
+    request_data = request.get_json()
+    url = request_data.get('url')
     
-    justification = analyze_url(url, features)
-    return jsonify({"result": justification})
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+    
+    # Call the analyze_url function
+    analysis = analyze_url(url)
+    
+    return jsonify(analysis)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
