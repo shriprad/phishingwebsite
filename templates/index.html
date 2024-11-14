@@ -3,46 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini AI URL Analysis</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>URL Phishing Analyzer</title>
 </head>
 <body>
-    <h1>Analyze URL with Gemini AI</h1>
-
-    <!-- URL Input Box -->
-    <form id="analyze-form">
-        <label for="url">Enter URL:</label>
-        <input type="text" id="url" name="url" required><br><br>
-
+    <h1>URL Phishing Analyzer</h1>
+    <form id="urlForm">
+        <label for="url">Enter URL to Analyze:</label>
+        <input type="text" id="url" name="url" required>
         <button type="submit">Analyze</button>
     </form>
     
-    <!-- Display Analysis Result -->
-    <h2>Analysis Result:</h2>
-    <pre id="result">No analysis yet.</pre>
+    <div id="result">
+        <h2>Analysis Result:</h2>
+        <pre id="analysisResults"></pre>
+    </div>
 
     <script>
-        $(document).ready(function() {
-            $('#analyze-form').on('submit', function(e) {
-                e.preventDefault();
-                
-                // Get the URL input value
-                const url = $('#url').val();
+        document.getElementById("urlForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            let url = document.getElementById("url").value;
 
-                // Send the URL to the Flask API for analysis
-                $.ajax({
-                    url: '/analyze',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ "url": url }),
-                    success: function(response) {
-                        // Display the analysis result
-                        $('#result').text(JSON.stringify(response, null, 2));
-                    },
-                    error: function() {
-                        $('#result').text('An error occurred during the analysis.');
-                    }
-                });
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({url: url})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("analysisResults").textContent = `Error: ${data.error}`;
+                } else {
+                    let analysisOutput = JSON.stringify(data, null, 2);
+                    document.getElementById("analysisResults").textContent = analysisOutput;
+                }
+            })
+            .catch(error => {
+                document.getElementById("analysisResults").textContent = `Error: ${error.message}`;
             });
         });
     </script>
