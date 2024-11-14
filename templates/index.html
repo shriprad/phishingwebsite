@@ -8,13 +8,16 @@
 </head>
 <body>
     <h1>Analyze URL with Gemini AI</h1>
+
+    <!-- URL Input Box -->
     <form id="analyze-form">
         <label for="url">Enter URL:</label>
-        <input type="text" id="url" name="url" placeholder="Enter URL to analyze" required><br><br>
+        <input type="text" id="url" name="url" required><br><br>
 
         <button type="submit">Analyze</button>
     </form>
     
+    <!-- Display Analysis Result -->
     <h2>Analysis Result:</h2>
     <pre id="result">No analysis yet.</pre>
 
@@ -23,19 +26,17 @@
             $('#analyze-form').on('submit', function(e) {
                 e.preventDefault();
                 
-                // Get the URL entered by the user
+                // Get the URL input value
                 const url = $('#url').val();
 
-                // Prepare the data for sending as JSON
-                const data = JSON.stringify({ "url": url });
-
+                // Send the URL to the Flask API for analysis
                 $.ajax({
                     url: '/analyze',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: data,
+                    data: JSON.stringify({ "url": url }),
                     success: function(response) {
-                        // Display the analysis result as JSON
+                        // Display the analysis result
                         $('#result').text(JSON.stringify(response, null, 2));
                     },
                     error: function() {
