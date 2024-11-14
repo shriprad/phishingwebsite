@@ -1,8 +1,5 @@
 from flask import Flask, request, jsonify
 import os
-import google.auth  # Ensure you have the google-auth library
-from google.auth.transport.requests import Request
-from google.oauth2 import service_account
 import requests
 
 app = Flask(__name__)
