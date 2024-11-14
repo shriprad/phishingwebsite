@@ -10,43 +10,33 @@
     <h1>Analyze URL with Gemini AI</h1>
     <form id="analyze-form">
         <label for="url">Enter URL:</label>
-        <input type="text" id="url" name="url" required><br><br>
-
-        <!-- Fields for the 16 Features -->
-        <label for="feature1">Feature 1:</label>
-        <input type="text" id="feature1" name="feature1" required><br><br>
-
-        <label for="feature2">Feature 2:</label>
-        <input type="text" id="feature2" name="feature2" required><br><br>
-
-        <label for="feature3">Feature 3:</label>
-        <input type="text" id="feature3" name="feature3" required><br><br>
-
-        <!-- Repeat for all other features -->
-        
-        <label for="feature16">Feature 16:</label>
-        <input type="text" id="feature16" name="feature16" required><br><br>
+        <input type="text" id="url" name="url" placeholder="Enter URL to analyze" required><br><br>
 
         <button type="submit">Analyze</button>
     </form>
     
     <h2>Analysis Result:</h2>
-    <p id="result">No analysis yet.</p>
+    <pre id="result">No analysis yet.</pre>
 
     <script>
         $(document).ready(function() {
             $('#analyze-form').on('submit', function(e) {
                 e.preventDefault();
                 
-                // Gather all form data
-                const formData = $(this).serialize();
+                // Get the URL entered by the user
+                const url = $('#url').val();
+
+                // Prepare the data for sending as JSON
+                const data = JSON.stringify({ "url": url });
 
                 $.ajax({
                     url: '/analyze',
                     type: 'POST',
-                    data: formData,
+                    contentType: 'application/json',
+                    data: data,
                     success: function(response) {
-                        $('#result').text(response.result);
+                        // Display the analysis result as JSON
+                        $('#result').text(JSON.stringify(response, null, 2));
                     },
                     error: function() {
                         $('#result').text('An error occurred during the analysis.');
