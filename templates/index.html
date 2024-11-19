@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Previous head content remains the same -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Phishing URL Analyzer</title>
     <style>
         /* Previous styles remain the same */
         
@@ -33,15 +35,49 @@
             list-style-type: none;
             padding: 0;
             margin: 0;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .url-list li {
             padding: 0.5rem;
             border-bottom: 1px solid #e2e8f0;
+            word-break: break-all;
         }
 
         .url-list li:last-child {
             border-bottom: none;
+        }
+
+        .url-stats {
+            background-color: #eef2ff;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -54,43 +90,105 @@
                 <input type="text" name="url" placeholder="Enter URL to analyze..." required>
                 <button type="submit">Analyze</button>
             </form>
-            <button id="fetchUrls" class="fetch-button">Fetch URLs</button>
+            <button id="fetchUrls" class="fetch-button">
+                <span class="button-content">
+                    <span id="buttonText">Fetch AWS URLs</span>
+                </span>
+            </button>
             <div id="fetchedUrls" class="fetched-urls" style="display: none;">
-                <h3>Fetched URLs:</h3>
+                <h3>AWS-Related URLs Found:</h3>
+                <div id="urlStats" class="url-stats"></div>
                 <ul class="url-list" id="urlList"></ul>
             </div>
         </div>
 
-        <!-- Rest of the template remains the same -->
+        <div id="loading" class="loading">
+            <div class="loading-content">
+                Performing comprehensive security analysis...
+                <div class="loading-subtext">This may take a few seconds</div>
+            </div>
+        </div>
 
-        <script>
-            // Previous script content remains
-            document.querySelector('form').addEventListener('submit', function() {
-                document.getElementById('loading').classList.add('active');
-            });
+        {% if analysis_result %}
+        <div class="analysis-result">
+            {% if analysis_result.error %}
+            <div class="error-message">
+                {{ analysis_result.error }}
+            </div>
+            {% else %}
+            <div class="url-components">
+                <h2>URL Structure Analysis</h2>
+                <div class="component-grid">
+                    {% for key, value in analysis_result.url_components.items() %}
+                    {% if value %}
+                    <div class="component-item">
+                        <strong>{{ key|title }}:</strong>
+                        <div>{{ value }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
 
-            // Add new script for URL fetching
-            document.getElementById('fetchUrls').addEventListener('click', async function() {
-                try {
-                    const response = await fetch('/fetch-urls');
-                    const data = await response.json();
-                    
-                    if (data.urls) {
-                        const urlList = document.getElementById('urlList');
-                        urlList.innerHTML = '';
-                        data.urls.forEach(url => {
-                            const li = document.createElement('li');
-                            li.textContent = url;
-                            urlList.appendChild(li);
-                        });
-                        document.getElementById('fetchedUrls').style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Error fetching URLs:', error);
-                    alert('Error fetching URLs. Please try again.');
-                }
-            });
-        </script>
+            <div class="analysis-content">
+                {{ analysis_result.analysis | safe }}
+            </div>
+
+            <div class="analysis-time">
+                Analysis completed in {{ analysis_result.analysis_time }} seconds
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading').classList.add('active');
+        });
+
+        document.getElementById('fetchUrls').addEventListener('click', async function() {
+            const button = this;
+            const buttonText = document.getElementById('buttonText');
+            const originalText = buttonText.textContent;
+            
+            try {
+                // Update button state
+                button.disabled = true;
+                buttonText.innerHTML = '<span class="loading-spinner"></span>Fetching URLs...';
+                
+                const response = await fetch('/fetch-urls');
+                const data = await response.json();
+                
+                if (data.urls) {
+                    const urlList = document.getElementById('urlList');
+                    const urlStats = document.getElementById('urlStats');
+                    urlList.innerHTML = '';
+                    
+                    // Update stats
+                    urlStats.innerHTML = `
+                        Total URLs scanned: ${data.total_urls}<br>
+                        AWS-related URLs found: ${data.aws_urls_count}
+                    `;
+                    
+                    // Add URLs to list
+                    data.urls.forEach(url => {
+                        const li = document.createElement('li');
+                        li.textContent = url;
+                        urlList.appendChild(li);
+                    });
+                    
+                    document.getElementById('fetchedUrls').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error fetching URLs:', error);
+                alert('Error fetching URLs. Please try again.');
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                buttonText.textContent = originalText;
+            }
+        });
+    </script>
 </body>
 </html>
