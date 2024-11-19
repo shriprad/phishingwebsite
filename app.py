@@ -4,7 +4,6 @@ import urllib.parse
 import tldextract
 import google.generativeai as genai
 import requests
-import socket
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -12,9 +11,6 @@ app = Flask(__name__)
 # Configure Gemini AI
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-
-# AWS IP Ranges URL
-AWS_IP_RANGES_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
@@ -33,26 +29,6 @@ def extract_url_components(url):
         'domain': extracted.domain,
         'suffix': extracted.suffix
     }
-
-def is_aws_host(url):
-    """Check if the URL is hosted on AWS based on IP ranges"""
-    try:
-        # Perform a DNS lookup to get the IP address of the URL
-        hostname = urllib.parse.urlparse(url).hostname
-        ip_address = socket.gethostbyname(hostname)
-
-        # Get AWS IP ranges from the public AWS JSON file
-        response = requests.get(AWS_IP_RANGES_URL)
-        aws_ip_ranges = response.json()
-        
-        # Check if the IP address falls within any AWS range
-        for prefix in aws_ip_ranges['prefixes']:
-            if ip_address in prefix['ip_prefix']:
-                return True
-        return False
-    except Exception as e:
-        print(f"Error checking AWS host for {url}: {e}")
-        return False
 
 def analyze_url(url):
     try:
@@ -134,13 +110,16 @@ def analyze_url(url):
 @app.route("/fetch-urls")
 def fetch_urls():
     try:
+        # Fetch the URLs from OpenPhish
         response = requests.get("https://openphish.com/feed.txt", timeout=5)
         urls = response.text.strip().split('\n')[:3]  # Get first 3 URLs
-        
-        # Check which URLs are hosted on AWS
-        aws_urls = [url for url in urls if is_aws_host(url)]
-        
-        return jsonify({"aws_urls": aws_urls})
+
+        # Save the fetched URLs to a text file
+        with open('fetched_urls.txt', 'w') as f:
+            for url in urls:
+                f.write(url + '\n')
+
+        return jsonify({"urls": urls})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
