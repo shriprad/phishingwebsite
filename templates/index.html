@@ -1,63 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Previous head content remains the same -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Phishing URL Analyzer</title>
     <style>
-        /* Previous styles remain the same */
-        
+        /* Existing styles remain the same */
+        :root {
+            --primary-color: #2563eb;
+            --danger-color: #dc2626;
+            --warning-color: #d97706;
+            --success-color: #16a34a;
+            --background-color: #f8fafc;
+        }
+
+        /* ... (keep all existing styles) ... */
+
+        /* Add new styles for fetch URL feature */
+        .fetch-url-section {
+            margin-bottom: 2rem;
+        }
+
         .fetch-button {
+            width: 100%;
             background-color: #4f46e5;
             margin-bottom: 1rem;
-            width: 100%;
         }
-        
-        .urls-container {
-            margin-top: 1rem;
+
+        .aws-urls-container {
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: none;
             max-height: 300px;
             overflow-y: auto;
-            background-color: #f8fafc;
-            border-radius: 8px;
-            padding: 1rem;
         }
-        
-        .url-item {
-            padding: 0.5rem;
+
+        .aws-url-item {
+            padding: 0.75rem;
             border-bottom: 1px solid #e2e8f0;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
-        
-        .url-item:hover {
+
+        .aws-url-item:last-child {
+            border-bottom: none;
+        }
+
+        .aws-url-item:hover {
             background-color: #e2e8f0;
         }
-        
-        .loading-spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
+
+        .fetch-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-right: 0.5rem;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Keep all existing styles from the original file */
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Advanced Phishing URL Analyzer</h1>
-        
-        <button onclick="fetchUrls()" class="fetch-button" id="fetchButton">
-            Fetch AWS-Hosted Phishing URLs
-        </button>
-        
-        <div id="urlsContainer" class="urls-container" style="display: none;">
-            <h3>AWS-Hosted Phishing URLs:</h3>
-            <div id="urlsList"></div>
+
+        <!-- Add new fetch URL section -->
+        <div class="fetch-url-section">
+            <button onclick="fetchAwsUrls()" class="fetch-button" id="fetchButton">
+                Fetch AWS-Hosted Phishing URLs
+            </button>
+            
+            <div id="awsUrlsContainer" class="aws-urls-container">
+                <h3>AWS-Hosted Phishing URLs:</h3>
+                <div id="awsUrlsList"></div>
+            </div>
         </div>
         
         <div class="search-box">
@@ -67,16 +99,60 @@
             </form>
         </div>
 
-        <!-- Rest of the template remains the same -->
+        <div id="loading" class="loading">
+            <div class="loading-content">
+                Performing comprehensive security analysis...
+                <div class="loading-subtext">This may take a few seconds</div>
+            </div>
+        </div>
+
+        {% if analysis_result %}
+        <div class="analysis-result">
+            {% if analysis_result.error %}
+            <div class="error-message">
+                {{ analysis_result.error }}
+            </div>
+            {% else %}
+            <div class="url-components">
+                <h2>URL Structure Analysis</h2>
+                <div class="component-grid">
+                    {% for key, value in analysis_result.url_components.items() %}
+                    {% if value %}
+                    <div class="component-item">
+                        <strong>{{ key|title }}:</strong>
+                        <div>{{ value }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="analysis-content">
+                {{ analysis_result.analysis | safe }}
+            </div>
+
+            <div class="analysis-time">
+                Analysis completed in {{ analysis_result.analysis_time }} seconds
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <script>
-        async function fetchUrls() {
+        // Keep existing submit event listener
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading').classList.add('active');
+        });
+
+        // Add new functions for URL fetching
+        async function fetchAwsUrls() {
             const button = document.getElementById('fetchButton');
-            const container = document.getElementById('urlsContainer');
-            const urlsList = document.getElementById('urlsList');
+            const container = document.getElementById('awsUrlsContainer');
+            const urlsList = document.getElementById('awsUrlsList');
             
-            button.innerHTML = '<div class="loading-spinner"></div>Fetching URLs...';
+            // Show loading state
+            button.innerHTML = '<div class="fetch-loading"><div class="spinner"></div>Fetching URLs...</div>';
             button.disabled = true;
             
             try {
@@ -85,23 +161,27 @@
                 
                 if (data.success) {
                     container.style.display = 'block';
-                    urlsList.innerHTML = data.urls.map(url => `
-                        <div class="url-item" onclick="setUrl('${url}')">
-                            ${url}
-                        </div>
-                    `).join('');
+                    
+                    if (data.urls.length === 0) {
+                        urlsList.innerHTML = '<div class="aws-url-item">No AWS-hosted phishing URLs found</div>';
+                    } else {
+                        urlsList.innerHTML = data.urls.map(url => `
+                            <div class="aws-url-item" onclick="selectUrl('${url.replace(/'/g, "\\'")}')">${url}</div>
+                        `).join('');
+                    }
                 } else {
                     alert('Error fetching URLs: ' + data.error);
                 }
             } catch (error) {
-                alert('Failed to fetch URLs: ' + error);
+                alert('Failed to fetch URLs: ' + error.message);
             } finally {
+                // Reset button state
                 button.innerHTML = 'Fetch AWS-Hosted Phishing URLs';
                 button.disabled = false;
             }
         }
-        
-        function setUrl(url) {
+
+        function selectUrl(url) {
             document.getElementById('urlInput').value = url;
         }
     </script>
