@@ -1,42 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Previous head content remains the same -->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Phishing URL Analyzer</title>
+    <!-- Previous head content remains the same -->
     <style>
         /* Previous styles remain the same */
-        .url-item {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            padding: 12px;
-        }
-
-        .url-main {
+        
+        .fetch-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
             font-weight: 500;
-            word-break: break-all;
-            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
         }
 
-        .url-details {
-            font-size: 0.875rem;
-            color: #64748b;
+        .fetch-button:hover {
+            background-color: #4338ca;
         }
 
-        .highlight {
-            background-color: #fef3c7;
-            padding: 0 2px;
-            border-radius: 2px;
+        .fetched-urls {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
         }
 
-        .no-results {
-            text-align: center;
-            padding: 2rem;
-            color: #64748b;
-            font-style: italic;
+        .url-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .url-list li {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .url-list li:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -49,81 +54,50 @@
                 <input type="text" name="url" placeholder="Enter URL to analyze..." required>
                 <button type="submit">Analyze</button>
             </form>
-            <button id="fetchUrls" class="fetch-button">
-                <span class="button-content">
-                    <span id="buttonText">Fetch AWS URLs</span>
-                </span>
-            </button>
+            <button id="fetchUrls" class="fetch-button">Fetch URLs</button>
             <div id="fetchedUrls" class="fetched-urls" style="display: none;">
-                <h3>AWS-Related URLs Found:</h3>
-                <div id="urlStats" class="url-stats"></div>
-                <div id="urlList" class="url-list"></div>
+                <h3>Fetched URLs Hosted on AWS:</h3>
+                <ul class="url-list" id="urlList"></ul>
             </div>
         </div>
 
         <!-- Rest of the template remains the same -->
 
         <script>
+            // Previous script content remains
             document.querySelector('form').addEventListener('submit', function() {
                 document.getElementById('loading').classList.add('active');
             });
 
+            // Add new script for URL fetching and filtering AWS-hosted URLs
             document.getElementById('fetchUrls').addEventListener('click', async function() {
-                const button = this;
-                const buttonText = document.getElementById('buttonText');
-                const originalText = buttonText.textContent;
-                
                 try {
-                    // Update button state
-                    button.disabled = true;
-                    buttonText.innerHTML = '<span class="loading-spinner"></span>Fetching URLs...';
-                    
                     const response = await fetch('/fetch-urls');
                     const data = await response.json();
                     
                     if (data.urls) {
                         const urlList = document.getElementById('urlList');
-                        const urlStats = document.getElementById('urlStats');
                         urlList.innerHTML = '';
+                        const awsUrls = data.urls.filter(url => {
+                            const hostname = new URL(url).hostname;
+                            return hostname.endsWith('amazonaws.com'); // Check if URL is hosted on AWS
+                        });
                         
-                        // Update stats
-                        urlStats.innerHTML = `
-                            Total URLs scanned: ${data.total_urls}<br>
-                            AWS-related URLs found: ${data.aws_urls_count}
-                        `;
-                        
-                        if (data.urls.length === 0) {
-                            urlList.innerHTML = `
-                                <div class="no-results">
-                                    No AWS-related URLs found in the current feed.
-                                </div>
-                            `;
-                        } else {
-                            // Add URLs to list with details
-                            data.urls.forEach(urlData => {
-                                const div = document.createElement('div');
-                                div.className = 'url-item';
-                                div.innerHTML = `
-                                    <div class="url-main">${urlData.url}</div>
-                                    <div class="url-details">
-                                        ${urlData.subdomain ? `Subdomain: <span class="highlight">${urlData.subdomain}</span><br>` : ''}
-                                        Domain: <span class="highlight">${urlData.domain}</span><br>
-                                        ${urlData.path ? `Path: <span class="highlight">${urlData.path}</span>` : ''}
-                                    </div>
-                                `;
-                                urlList.appendChild(div);
+                        if (awsUrls.length > 0) {
+                            awsUrls.forEach(url => {
+                                const li = document.createElement('li');
+                                li.textContent = url;
+                                urlList.appendChild(li);
                             });
+                            document.getElementById('fetchedUrls').style.display = 'block';
+                        } else {
+                            urlList.innerHTML = '<li>No URLs hosted on AWS found.</li>';
+                            document.getElementById('fetchedUrls').style.display = 'block';
                         }
-                        
-                        document.getElementById('fetchedUrls').style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Error fetching URLs:', error);
                     alert('Error fetching URLs. Please try again.');
-                } finally {
-                    // Reset button state
-                    button.disabled = false;
-                    buttonText.textContent = originalText;
                 }
             });
         </script>
