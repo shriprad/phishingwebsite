@@ -4,6 +4,7 @@ import urllib.parse
 import tldextract
 import google.generativeai as genai
 import requests
+import re
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -13,20 +14,76 @@ os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 def is_aws_url(url):
-    """Check if the URL is AWS-related"""
-    aws_indicators = [
-        'amazonaws.com',
-        'aws.amazon.com',
-        'amazon.aws',
-        's3.amazonaws',
-        'cloudfront.net',
-        'elasticbeanstalk.com',
-        'awsapps.com',
-        'aws-dev',
-        'aws.',
-        'aws-'
+    """
+    Enhanced check for AWS-related URLs using multiple detection methods
+    """
+    url_lower = url.lower()
+    
+    # Common AWS related keywords and patterns
+    aws_patterns = [
+        # Direct AWS domains
+        r'\.amazonaws\.com',
+        r'\.aws\.amazon\.com',
+        r'aws\.amazon\.com',
+        r'amazon\.aws',
+        r'\.awsapps\.com',
+        r'\.cloudfront\.net',
+        r'\.elasticbeanstalk\.com',
+        
+        # AWS service keywords
+        r's3[\.-]',
+        r'ec2[\.-]',
+        r'rds[\.-]',
+        r'iam[\.-]',
+        r'lambda[\.-]',
+        r'dynamodb[\.-]',
+        
+        # Common AWS related terms
+        r'aws[^a-z]',  # aws followed by non-letter
+        r'[^a-z]aws',  # aws preceded by non-letter
+        r'amazon[^a-z]web[^a-z]services',
+        r'aws[^a-z]console',
+        r'aws[^a-z]login',
+        r'aws[^a-z]signin',
+        r'aws[^a-z]management',
+        r'aws[^a-z]portal',
+        
+        # AWS regions
+        r'us-east-[12]',
+        r'us-west-[12]',
+        r'eu-west-[123]',
+        r'eu-central-[1]',
+        r'ap-southeast-[12]',
+        r'ap-northeast-[12]',
+        r'sa-east-1',
+        
+        # Common phishing patterns
+        r'aws.*login',
+        r'aws.*signin',
+        r'aws.*console',
+        r'aws.*account',
+        r'aws.*verify',
+        r'aws.*secure',
+        r'amazon.*aws',
+        r'signin.*aws',
+        r'console.*aws',
+        r'login.*aws',
+        
+        # URL encoded variations
+        r'%2Eaws%2E',
+        r'%2Eamazonaws%2E',
     ]
-    return any(indicator in url.lower() for indicator in aws_indicators)
+    
+    # Additional checks for subdomains and paths
+    extracted = tldextract.extract(url_lower)
+    domain_parts = [extracted.subdomain, extracted.domain, extracted.suffix]
+    path = urllib.parse.urlparse(url_lower).path
+    
+    # Check all parts of the URL against patterns
+    full_url_for_check = f"{'.'.join(domain_parts)}{path}"
+    
+    # Return True if any pattern matches
+    return any(re.search(pattern, full_url_for_check) for pattern in aws_patterns)
 
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
@@ -47,6 +104,7 @@ def extract_url_components(url):
     }
 
 def analyze_url(url):
+    # Rest of analyze_url function remains unchanged
     try:
         # Extract URL components for analysis
         url_components = extract_url_components(url)
@@ -129,8 +187,18 @@ def fetch_urls():
         response = requests.get("https://openphish.com/feed.txt", timeout=10)
         all_urls = response.text.strip().split('\n')
         
-        # Filter AWS-related URLs
-        aws_urls = [url for url in all_urls if is_aws_url(url)]
+        # Filter AWS-related URLs with improved detection
+        aws_urls = []
+        for url in all_urls:
+            if is_aws_url(url):
+                # Add debug information
+                components = extract_url_components(url)
+                aws_urls.append({
+                    'url': url,
+                    'domain': components['domain'],
+                    'subdomain': components['subdomain'],
+                    'path': components['path']
+                })
         
         return jsonify({
             "urls": aws_urls,
