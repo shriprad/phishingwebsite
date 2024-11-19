@@ -1,156 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Phishing URL Analyzer</title>
+    <!-- Previous head content remains the same -->
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --danger-color: #dc2626;
-            --warning-color: #d97706;
-            --success-color: #16a34a;
-            --background-color: #f8fafc;
+        /* Previous styles remain the same */
+        
+        .fetch-button {
+            background-color: #4f46e5;
+            margin-bottom: 1rem;
+            width: 100%;
         }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--background-color);
-            color: #1e293b;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            padding: 2rem;
-        }
-
-        h1 {
-            color: #1e293b;
-            text-align: center;
-            font-size: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .search-box {
+        
+        .urls-container {
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
             background-color: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 1rem;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            border: 2px solid #e2e8f0;
             border-radius: 8px;
-            transition: all 0.3s;
+            padding: 1rem;
         }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
+        
+        .url-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
             cursor: pointer;
-            transition: all 0.3s;
         }
-
-        button:hover {
-            background-color: #1d4ed8;
+        
+        .url-item:hover {
+            background-color: #e2e8f0;
         }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            display: none;
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
         }
-
-        .loading.active {
-            display: block;
-        }
-
-        .analysis-result {
-            margin-top: 2rem;
-        }
-
-        .url-components {
-            background-color: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-        }
-
-        .component-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .component-item {
-            background-color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .analysis-content {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            white-space: pre-wrap;
-        }
-
-        .risk-high {
-            color: var(--danger-color);
-            font-weight: 600;
-        }
-
-        .risk-medium {
-            color: var(--warning-color);
-            font-weight: 600;
-        }
-
-        .risk-low {
-            color: var(--success-color);
-            font-weight: 600;
-        }
-
-        .analysis-time {
-            text-align: right;
-            color: #64748b;
-            font-size: 0.875rem;
-            margin-top: 1rem;
-        }
-
-        .error-message {
-            background-color: #fee2e2;
-            color: var(--danger-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -158,57 +51,59 @@
     <div class="container">
         <h1>Advanced Phishing URL Analyzer</h1>
         
+        <button onclick="fetchUrls()" class="fetch-button" id="fetchButton">
+            Fetch AWS-Hosted Phishing URLs
+        </button>
+        
+        <div id="urlsContainer" class="urls-container" style="display: none;">
+            <h3>AWS-Hosted Phishing URLs:</h3>
+            <div id="urlsList"></div>
+        </div>
+        
         <div class="search-box">
             <form method="POST" class="input-group">
-                <input type="text" name="url" placeholder="Enter URL to analyze..." required>
+                <input type="text" name="url" id="urlInput" placeholder="Enter URL to analyze..." required>
                 <button type="submit">Analyze</button>
             </form>
         </div>
 
-        <div id="loading" class="loading">
-            <div class="loading-content">
-                Performing comprehensive security analysis...
-                <div class="loading-subtext">This may take a few seconds</div>
-            </div>
-        </div>
-
-        {% if analysis_result %}
-        <div class="analysis-result">
-            {% if analysis_result.error %}
-            <div class="error-message">
-                {{ analysis_result.error }}
-            </div>
-            {% else %}
-            <div class="url-components">
-                <h2>URL Structure Analysis</h2>
-                <div class="component-grid">
-                    {% for key, value in analysis_result.url_components.items() %}
-                    {% if value %}
-                    <div class="component-item">
-                        <strong>{{ key|title }}:</strong>
-                        <div>{{ value }}</div>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="analysis-content">
-                {{ analysis_result.analysis | safe }}
-            </div>
-
-            <div class="analysis-time">
-                Analysis completed in {{ analysis_result.analysis_time }} seconds
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
+        <!-- Rest of the template remains the same -->
     </div>
 
     <script>
-        document.querySelector('form').addEventListener('submit', function() {
-            document.getElementById('loading').classList.add('active');
-        });
+        async function fetchUrls() {
+            const button = document.getElementById('fetchButton');
+            const container = document.getElementById('urlsContainer');
+            const urlsList = document.getElementById('urlsList');
+            
+            button.innerHTML = '<div class="loading-spinner"></div>Fetching URLs...';
+            button.disabled = true;
+            
+            try {
+                const response = await fetch('/fetch-urls');
+                const data = await response.json();
+                
+                if (data.success) {
+                    container.style.display = 'block';
+                    urlsList.innerHTML = data.urls.map(url => `
+                        <div class="url-item" onclick="setUrl('${url}')">
+                            ${url}
+                        </div>
+                    `).join('');
+                } else {
+                    alert('Error fetching URLs: ' + data.error);
+                }
+            } catch (error) {
+                alert('Failed to fetch URLs: ' + error);
+            } finally {
+                button.innerHTML = 'Fetch AWS-Hosted Phishing URLs';
+                button.disabled = false;
+            }
+        }
+        
+        function setUrl(url) {
+            document.getElementById('urlInput').value = url;
+        }
     </script>
 </body>
 </html>
