@@ -56,7 +56,7 @@
             </form>
             <button id="fetchUrls" class="fetch-button">Fetch URLs</button>
             <div id="fetchedUrls" class="fetched-urls" style="display: none;">
-                <h3>Fetched URLs Hosted on AWS:</h3>
+                <h3>Fetched URLs:</h3>
                 <ul class="url-list" id="urlList"></ul>
             </div>
         </div>
@@ -64,12 +64,12 @@
         <!-- Rest of the template remains the same -->
 
         <script>
-            // Previous script content remains
+            // Previous script content remains the same
             document.querySelector('form').addEventListener('submit', function() {
                 document.getElementById('loading').classList.add('active');
             });
 
-            // Add new script for URL fetching and filtering AWS-hosted URLs
+            // Add new script for URL fetching and saving to txt file
             document.getElementById('fetchUrls').addEventListener('click', async function() {
                 try {
                     const response = await fetch('/fetch-urls');
@@ -78,22 +78,15 @@
                     if (data.urls) {
                         const urlList = document.getElementById('urlList');
                         urlList.innerHTML = '';
-                        const awsUrls = data.urls.filter(url => {
-                            const hostname = new URL(url).hostname;
-                            return hostname.endsWith('amazonaws.com'); // Check if URL is hosted on AWS
+                        data.urls.forEach(url => {
+                            const li = document.createElement('li');
+                            li.textContent = url;
+                            urlList.appendChild(li);
                         });
+                        document.getElementById('fetchedUrls').style.display = 'block';
                         
-                        if (awsUrls.length > 0) {
-                            awsUrls.forEach(url => {
-                                const li = document.createElement('li');
-                                li.textContent = url;
-                                urlList.appendChild(li);
-                            });
-                            document.getElementById('fetchedUrls').style.display = 'block';
-                        } else {
-                            urlList.innerHTML = '<li>No URLs hosted on AWS found.</li>';
-                            document.getElementById('fetchedUrls').style.display = 'block';
-                        }
+                        // Notify user that URLs are saved in a text file
+                        alert('Fetched URLs have been saved to fetched_urls.txt');
                     }
                 } catch (error) {
                     console.error('Error fetching URLs:', error);
