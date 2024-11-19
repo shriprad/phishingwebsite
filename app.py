@@ -12,6 +12,22 @@ app = Flask(__name__)
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
+def is_aws_url(url):
+    """Check if the URL is AWS-related"""
+    aws_indicators = [
+        'amazonaws.com',
+        'aws.amazon.com',
+        'amazon.aws',
+        's3.amazonaws',
+        'cloudfront.net',
+        'elasticbeanstalk.com',
+        'awsapps.com',
+        'aws-dev',
+        'aws.',
+        'aws-'
+    ]
+    return any(indicator in url.lower() for indicator in aws_indicators)
+
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
     parsed = urllib.parse.urlparse(url)
@@ -31,7 +47,6 @@ def extract_url_components(url):
     }
 
 def analyze_url(url):
-    # Existing analyze_url function remains unchanged
     try:
         # Extract URL components for analysis
         url_components = extract_url_components(url)
@@ -111,9 +126,17 @@ def analyze_url(url):
 @app.route("/fetch-urls")
 def fetch_urls():
     try:
-        response = requests.get("https://openphish.com/feed.txt", timeout=5)
-        urls = response.text.strip().split('\n')[:3]  # Get first 3 URLs
-        return jsonify({"urls": urls})
+        response = requests.get("https://openphish.com/feed.txt", timeout=10)
+        all_urls = response.text.strip().split('\n')
+        
+        # Filter AWS-related URLs
+        aws_urls = [url for url in all_urls if is_aws_url(url)]
+        
+        return jsonify({
+            "urls": aws_urls,
+            "total_urls": len(all_urls),
+            "aws_urls_count": len(aws_urls)
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
