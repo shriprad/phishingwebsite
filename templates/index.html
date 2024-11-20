@@ -160,4 +160,36 @@
         
         <div class="search-box">
             <form method="POST" class="input-group">
-                <input type="text" name="url" placeholder="Enter
+                <input type="text" name="url" placeholder="Enter URL to analyze" required>
+                <button type="submit">Analyze</button>
+            </form>
+        </div>
+
+        {% if analysis_result %}
+            <div class="analysis-result">
+                <div class="url-components">
+                    <h2>URL Components</h2>
+                    <div class="component-grid">
+                        <div class="component-item"><strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}</div>
+                        <div class="component-item"><strong>Scheme:</strong> {{ analysis_result.url_components.scheme }}</div>
+                        <div class="component-item"><strong>Domain:</strong> {{ analysis_result.url_components.domain }}</div>
+                        <div class="component-item"><strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain }}</div>
+                        <div class="component-item"><strong>Path:</strong> {{ analysis_result.url_components.path }}</div>
+                        <div class="component-item"><strong>Query Parameters:</strong> {{ analysis_result.url_components.query }}</div>
+                    </div>
+                </div>
+                
+                <div class="analysis-content">
+                    <h2>Phishing Analysis</h2>
+                    <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
+                    <div class="analysis-time">
+                        <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
+                    </div>
+                    <p><strong>Analysis Result:</strong></p>
+                    <pre>{{ analysis_result.analysis }}</pre>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
