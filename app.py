@@ -1,74 +1,109 @@
 import os
+import time
+import urllib.parse
+import tldextract
 import google.generativeai as genai
 from flask import Flask, render_template, request
-import urllib.parse
 
 app = Flask(__name__)
 
+# Configure Gemini AI
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
+def extract_url_components(url):
+    """Extract and analyze various components of the URL"""
+    parsed = urllib.parse.urlparse(url)
+    extracted = tldextract.extract(url)
+    
+    return {
+        'full_url': url,
+        'scheme': parsed.scheme,
+        'netloc': parsed.netloc,
+        'path': parsed.path,
+        'params': parsed.params,
+        'query': parsed.query,
+        'fragment': parsed.fragment,
+        'subdomain': extracted.subdomain,
+        'domain': extracted.domain,
+        'suffix': extracted.suffix
+    }
+
 def analyze_url(url):
     try:
-        # Create a detailed prompt for Gemini AI to analyze all features
-        analysis_prompt = f"""Analyze this URL for phishing: {url}
+        # Extract URL components for analysis
+        url_components = extract_url_components(url)
         
-        Please check and explain the following features in detail:
-        1. Is there an IP address in the URL? This is suspicious as legitimate sites rarely use IP addresses.
-        2. Is there an @ symbol in the URL? This can be used to trick browsers.
-        3. How many dots are in the hostname? More than 3 dots is suspicious.
-        4. Are there hyphens (-) in the domain? These are rarely used in legitimate URLs.
-        5. Is there URL redirection using '//' in the path?
-        6. Is there an HTTPS token in the domain part (not at the start)?
-        7. Does it use email submission methods (mail() or mailto:)?
-        8. Is it using URL shortening services?
-        9. Is the hostname length greater than 25 characters?
-        10. Are there sensitive words like 'secure', 'account', 'banking', 'paypal', etc.?
-        11. Are there more than 5 slashes in the URL?
-        12. Are there Unicode characters in the URL?
-        13. For SSL certificates (if https), how old is it?
-        14. Analyze anchor tags - are they pointing to different domains?
-        15. Check for invisible iframes
-        16. What is the website's Alexa rank?
+        # Craft a comprehensive analysis prompt
+        analysis_prompt = f"""Perform a detailed phishing URL analysis for: {url}
 
-        For each feature, provide:
-        1. Whether it's suspicious (YES/NO)
-        2. Brief explanation why
-        3. Risk score (0-10)
+        URL Components:
+        - Full URL: {url_components['full_url']}
+        - Domain: {url_components['domain']}
+        - Subdomain: {url_components['subdomain']}
+        - TLD: {url_components['suffix']}
+        - Path: {url_components['path']}
+        - Query Parameters: {url_components['query']}
 
-        Finally, provide:
-        1. Overall phishing probability score (0-100%)
-        2. Risk level (Low/Medium/High)
-        3. Detailed justification for the assessment
+        Please provide a comprehensive security analysis including:
+
+        1. Brand Impersonation Analysis:
+        - Identify any legitimate brands being impersonated
+        - Explain the impersonation techniques used
+        - Compare with legitimate domain patterns for identified brands
+        
+        2. URL Structure Analysis:
+        - Analyze domain and subdomain patterns
+        - Identify suspicious URL patterns
+        - Check for typosquatting or homograph attacks
+        
+        3. Technical Risk Indicators:
+        - Presence of suspicious URL patterns
+        - Domain age and reputation indicators
+        - SSL/TLS usage analysis
+        - Redirect patterns
+        
+        4. Social Engineering Indicators:
+        - Urgency or pressure tactics in URL
+        - Brand-related keywords
+        - Security-related keywords
+        - Common phishing patterns
+        
+        5. Provide a detailed phishing risk assessment:
+        - Calculate a phishing probability score (0-100%)
+        - Assign a risk level (Low/Medium/High)
+        - List specific security concerns
+        - Provide a detailed justification for the assessment
+
+        6. Security Recommendations:
+        - Specific warnings if malicious
+        - Safe browsing recommendations
+        - Alternative legitimate URLs if brand impersonation detected
+
+        Format the response clearly with section headers and bullet points.
         """
 
         # Get Gemini AI analysis
         model = genai.GenerativeModel('gemini-pro')
-        chat = model.start_chat(history=[])
-        response = chat.send_message(analysis_prompt)
+        start_time = time.time()
+        response = model.generate_content(analysis_prompt)
+        analysis_time = round(time.time() - start_time, 2)
 
-        # Parse URL components for display
-        parsed_url = urllib.parse.urlparse(url)
-        url_parts = {
-            'scheme': parsed_url.scheme,
-            'netloc': parsed_url.netloc,
-            'path': parsed_url.path,
-            'params': parsed_url.params,
-            'query': parsed_url.query,
-            'fragment': parsed_url.fragment
+        # Extract key information from the response
+        analysis_result = {
+            'url_components': url_components,
+            'analysis': response.text,
+            'analysis_time': analysis_time
         }
 
-        return {
-            'url': url,
-            'url_parts': url_parts,
-            'analysis': response.text
-        }
+        return analysis_result
 
     except Exception as e:
         return {
-            'url': url,
+            'url_components': url_components if 'url_components' in locals() else None,
             'error': str(e),
-            'analysis': 'Analysis failed due to an error'
+            'analysis': 'Analysis failed due to an error',
+            'analysis_time': 0
         }
 
 @app.route("/", methods=["GET", "POST"])
