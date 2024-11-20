@@ -1,99 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- Previous head content remains the same -->
-    <style>
-        /* Previous styles remain the same */
-        
-        .fetch-button {
-            background-color: #4f46e5;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 1rem;
+<div class="search-box">
+    <button id="fetch-btn">Fetch</button>
+</div>
+
+<div id="fetch-loading" class="loading">
+    Fetching phishing URLs from OpenPhish...
+</div>
+
+<div id="fetch-result" class="analysis-result"></div>
+
+<script>
+    document.getElementById('fetch-btn').addEventListener('click', async () => {
+        const loading = document.getElementById('fetch-loading');
+        const result = document.getElementById('fetch-result');
+
+        loading.classList.add('active');
+        result.innerHTML = ''; // Clear previous results
+
+        try {
+            const response = await fetch('/fetch');
+            const data = await response.json();
+
+            if (data.error) {
+                result.innerHTML = `<div class="error-message">${data.error}</div>`;
+            } else {
+                result.innerHTML = `
+                    <div class="url-components">
+                        <h2>Phishing URL Statistics</h2>
+                        <p>Total URLs Fetched: ${data.total_urls}</p>
+                        <p>AWS-Hosted Phishing URLs: ${data.aws_count}</p>
+                        ${data.aws_urls.length > 0
+                            ? `<ul>${data.aws_urls.map(url => `<li>${url}</li>`).join('')}</ul>`
+                            : '<p>No AWS-hosted phishing URLs found.</p>'
+                        }
+                    </div>`;
+            }
+        } catch (err) {
+            result.innerHTML = `<div class="error-message">Error fetching data: ${err.message}</div>`;
+        } finally {
+            loading.classList.remove('active');
         }
-
-        .fetch-button:hover {
-            background-color: #4338ca;
-        }
-
-        .fetched-urls {
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .url-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .url-list li {
-            padding: 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .url-list li:last-child {
-            border-bottom: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Advanced Phishing URL Analyzer</h1>
-        
-        <div class="search-box">
-            <form method="POST" class="input-group">
-                <input type="text" name="url" placeholder="Enter URL to analyze..." required>
-                <button type="submit">Analyze</button>
-            </form>
-            <button id="fetchUrls" class="fetch-button">Fetch URLs</button>
-            <div id="fetchedUrls" class="fetched-urls" style="display: none;">
-                <h3>Fetched URLs:</h3>
-                <ul class="url-list" id="urlList"></ul>
-            </div>
-        </div>
-
-        <!-- Rest of the template remains the same -->
-
-        <script>
-            // Previous script content remains the same
-            document.querySelector('form').addEventListener('submit', function() {
-                document.getElementById('loading').classList.add('active');
-            });
-
-            // Add new script for URL fetching and saving to txt file
-            document.getElementById('fetchUrls').addEventListener('click', async function() {
-                try {
-                    const response = await fetch('/fetch-urls');
-                    const data = await response.json();
-                    
-                    if (data.urls) {
-                        const urlList = document.getElementById('urlList');
-                        urlList.innerHTML = '';
-                        data.urls.forEach(url => {
-                            const li = document.createElement('li');
-                            li.textContent = url;
-                            urlList.appendChild(li);
-                        });
-                        document.getElementById('fetchedUrls').style.display = 'block';
-                        
-                        // Notify user that URLs are saved in a text file
-                        alert('Fetched URLs have been saved to fetched_urls.txt');
-                    }
-                } catch (error) {
-                    console.error('Error fetching URLs:', error);
-                    alert('Error fetching URLs. Please try again.');
-                }
-            });
-        </script>
-    </div>
-</body>
-</html>
+    });
+</script>
