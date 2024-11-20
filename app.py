@@ -1,14 +1,13 @@
 import whois
 import requests
+import os
 from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
-# OpenPhish URL for phishing URLs
 OPENPHISH_URL = "https://openphish.com/feed.txt"
 
 def fetch_phishing_urls():
-    """Fetch phishing URLs from OpenPhish."""
     try:
         response = requests.get(OPENPHISH_URL)
         if response.status_code == 200:
@@ -20,11 +19,8 @@ def fetch_phishing_urls():
         return {"error": f"Error fetching URLs from OpenPhish: {str(e)}"}
 
 def check_if_aws_hosted(domain):
-    """Check if a domain is hosted on AWS using WHOIS."""
     try:
-        # Perform WHOIS lookup
         whois_data = whois.whois(domain)
-        # Check if the WHOIS data contains keywords indicating AWS hosting
         if whois_data and ('amazon' in str(whois_data).lower() or 'aws' in str(whois_data).lower()):
             return True
         return False
@@ -37,17 +33,14 @@ def index():
 
 @app.route("/check-aws", methods=["GET"])
 def check_aws():
-    # Step 1: Fetch phishing URLs from OpenPhish
     phishing_urls = fetch_phishing_urls()
     if isinstance(phishing_urls, dict) and "error" in phishing_urls:
         return jsonify({"error": phishing_urls["error"]})
 
-    # Step 2: Check if the domains are hosted on AWS using WHOIS lookup
     aws_hosted_urls = []
     for url in phishing_urls:
-        # Extract the domain from the URL
-        domain = url.split("/")[2]  # Extract domain from URL
-        if check_if_aws_hosted(domain):
+        domain = url.split("/")[2]
+        if check_if_aws_hosted(domain) or 'amazon' in domain.lower():
             aws_hosted_urls.append(url)
 
     return jsonify({
