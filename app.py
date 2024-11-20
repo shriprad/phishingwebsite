@@ -5,7 +5,7 @@ from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
-# URLs and Constants
+# URLs for OpenPhish and AWS IP ranges
 OPENPHISH_URL = "https://openphish.com/feed.txt"
 AWS_IP_RANGES_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 
@@ -26,8 +26,11 @@ def fetch_aws_ip_ranges():
     try:
         response = requests.get(AWS_IP_RANGES_URL)
         if response.status_code == 200:
-            data = response.json()
-            return [prefix['ip_prefix'] for prefix in data['prefixes']]
+            try:
+                data = response.json()  # Parse JSON safely
+                return [prefix['ip_prefix'] for prefix in data['prefixes']]
+            except ValueError:
+                return {"error": "Invalid JSON response received from AWS IP ranges."}
         else:
             return {"error": f"Failed to fetch AWS IP ranges. Status code: {response.status_code}"}
     except Exception as e:
@@ -84,4 +87,4 @@ def check_aws():
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
