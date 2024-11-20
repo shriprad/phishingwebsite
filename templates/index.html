@@ -3,145 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phishing URL Analyzer</title>
+    <title>Advanced Phishing URL Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
             line-height: 1.6;
         }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
         .container {
-            background-color: #f4f4f4;
-            padding: 20px;
-            border-radius: 8px;
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            font-size: 2.2rem;
+            position: relative;
+        }
+        h1::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 4px;
+            background-color: #3498db;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
         }
         form {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
-        input[type="text"] {
+        input {
             flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 0.8rem;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: #2980b9;
         }
         button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
             color: white;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .email-confirmation {
-            background-color: #dff0d8;
-            color: #3c763d;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .error-message {
-            background-color: #f2dede;
-            color: #a94442;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .analysis-result {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            padding: 15px;
             border-radius: 8px;
-            margin-top: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .analysis-result, .fetched-urls {
+            background-color: #f9fbfc;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px solid #e6eaee;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
         .component-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
-        .fetched-urls {
-            margin-top: 20px;
-            background-color: #f9f9f9;
-            padding: 15px;
+        .component-item {
+            background-color: #e9f3fb;
+            padding: 1rem;
             border-radius: 8px;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+        .component-item:hover {
+            transform: translateY(-5px);
+        }
+        .fetched-urls ul {
+            list-style-type: none;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .fetched-urls li {
+            background-color: #f0f4f8;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            word-break: break-all;
+            transition: background-color 0.3s ease;
+        }
+        .fetched-urls li:hover {
+            background-color: #e6edf3;
         }
         pre {
             white-space: pre-wrap;
             word-wrap: break-word;
-            background-color: #f4f4f4;
-            padding: 10px;
-            border-radius: 4px;
+            background-color: #f4f6f9;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #e6eaee;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+            form {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Advanced Phishing URL Analyzer</h1>
-        
-        <form method="POST">
-            <input type="text" name="url" placeholder="Enter URL to analyze" required>
-            <button type="submit">Analyze URL</button>
-            <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
-        </form>
-
-        {% if error_message %}
-        <div class="error-message">
-            <p>⚠️ {{ error_message }}</p>
-        </div>
-        {% endif %}
-
-        {% if email_sent %}
-        <div class="email-confirmation">
-            <p>📧 Email Notification Sent Successfully</p>
-            <p>The URL analysis report has been sent to your email.</p>
-        </div>
-        {% endif %}
-
-        {% if analysis_result %}
-        <div class="analysis-result">
-            {% if analysis_result.error %}
-            <div class="error-message">
-                <p>❌ Analysis Error: {{ analysis_result.error }}</p>
+<div class="container">
+    <h1>Advanced Phishing URL Analyzer</h1>
+    <form method="POST">
+        <input type="text" name="url" placeholder="Enter URL to analyze">
+        <button type="submit">Analyze URL</button>
+        <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
+    </form>
+    {% if analysis_result %}
+    <div class="analysis-result">
+        <h2>URL Components</h2>
+        <div class="component-grid">
+            <div class="component-item">
+                <strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}
             </div>
-            {% else %}
-            <h2>URL Components</h2>
-            <div class="component-grid">
-                <div><strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}</div>
-                <div><strong>Scheme:</strong> {{ analysis_result.url_components.scheme or 'N/A' }}</div>
-                <div><strong>Domain:</strong> {{ analysis_result.url_components.domain or 'N/A' }}</div>
-                <div><strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain or 'N/A' }}</div>
-                <div><strong>Path:</strong> {{ analysis_result.url_components.path or 'N/A' }}</div>
-                <div><strong>Query Parameters:</strong> {{ analysis_result.url_components.query or 'N/A' }}</div>
+            <div class="component-item">
+                <strong>Scheme:</strong> {{ analysis_result.url_components.scheme }}
             </div>
-
-            <h2>Phishing Analysis</h2>
-            <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
-            <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
-            
-            <pre>{{ analysis_result.analysis }}</pre>
-            {% endif %}
+            <div class="component-item">
+                <strong>Domain:</strong> {{ analysis_result.url_components.domain }}
+            </div>
+            <div class="component-item">
+                <strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain }}
+            </div>
+            <div class="component-item">
+                <strong>Path:</strong> {{ analysis_result.url_components.path }}
+            </div>
+            <div class="component-item">
+                <strong>Query Parameters:</strong> {{ analysis_result.url_components.query }}
+            </div>
         </div>
-        {% endif %}
-
-        {% if fetched_urls %}
-        <div class="fetched-urls">
-            <h2>Fetched Phishing URLs</h2>
-            <ul>
-                {% for url in fetched_urls %}
-                <li>{{ url }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
+        <h2>Phishing Analysis</h2>
+        <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
+        <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
+        <pre>{{ analysis_result.analysis }}</pre>
     </div>
+    {% endif %}
+    {% if fetched_urls %}
+    <div class="fetched-urls">
+        <h2>Fetched Phishing URLs</h2>
+        <ul>
+            {% for url in fetched_urls %}
+            <li>{{ url }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
 </body>
 </html>
