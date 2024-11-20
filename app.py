@@ -3,8 +3,9 @@ import time
 import urllib.parse
 import tldextract
 import google.generativeai as genai
-import requests
 from flask import Flask, render_template, request, jsonify
+import requests
+import re
 
 app = Flask(__name__)
 
@@ -12,116 +13,30 @@ app = Flask(__name__)
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
-def extract_url_components(url):
-    """Extract and analyze various components of the URL"""
-    parsed = urllib.parse.urlparse(url)
-    extracted = tldextract.extract(url)
-    
-    return {
-        'full_url': url,
-        'scheme': parsed.scheme,
-        'netloc': parsed.netloc,
-        'path': parsed.path,
-        'params': parsed.params,
-        'query': parsed.query,
-        'fragment': parsed.fragment,
-        'subdomain': extracted.subdomain,
-        'domain': extracted.domain,
-        'suffix': extracted.suffix
-    }
+# OpenPhish URL
+OPENPHISH_URL = "https://openphish.com/feed.txt"
 
-def analyze_url(url):
+def fetch_phishing_urls():
+    """Fetch phishing URLs from OpenPhish."""
     try:
-        # Extract URL components for analysis
-        url_components = extract_url_components(url)
-        
-        # Craft a comprehensive analysis prompt
-        analysis_prompt = f"""Perform a detailed phishing URL analysis for: {url}
-
-        URL Components:
-        - Full URL: {url_components['full_url']}
-        - Domain: {url_components['domain']}
-        - Subdomain: {url_components['subdomain']}
-        - TLD: {url_components['suffix']}
-        - Path: {url_components['path']}
-        - Query Parameters: {url_components['query']}
-
-        Please provide a comprehensive security analysis including:
-
-        1. Brand Impersonation Analysis:
-        - Identify any legitimate brands being impersonated
-        - Explain the impersonation techniques used
-        - Compare with legitimate domain patterns for identified brands
-        
-        2. URL Structure Analysis:
-        - Analyze domain and subdomain patterns
-        - Identify suspicious URL patterns
-        - Check for typosquatting or homograph attacks
-        
-        3. Technical Risk Indicators:
-        - Presence of suspicious URL patterns
-        - Domain age and reputation indicators
-        - SSL/TLS usage analysis
-        - Redirect patterns
-        
-        4. Social Engineering Indicators:
-        - Urgency or pressure tactics in URL
-        - Brand-related keywords
-        - Security-related keywords
-        - Common phishing patterns
-        
-        5. Provide a detailed phishing risk assessment:
-        - Calculate a phishing probability score (0-100%)
-        - Assign a risk level (Low/Medium/High)
-        - List specific security concerns
-        - Provide a detailed justification for the assessment
-
-        6. Security Recommendations:
-        - Specific warnings if malicious
-        - Safe browsing recommendations
-        - Alternative legitimate URLs if brand impersonation detected
-
-        Format the response clearly with section headers and bullet points.
-        """
-
-        # Get Gemini AI analysis
-        model = genai.GenerativeModel('gemini-pro')
-        start_time = time.time()
-        response = model.generate_content(analysis_prompt)
-        analysis_time = round(time.time() - start_time, 2)
-
-        # Extract key information from the response
-        analysis_result = {
-            'url_components': url_components,
-            'analysis': response.text,
-            'analysis_time': analysis_time
-        }
-
-        return analysis_result
-
+        # Use the defined OpenPhish URL
+        response = requests.get(OPENPHISH_URL)
+        if response.status_code == 200:
+            phishing_urls = response.text.splitlines()
+            return phishing_urls
+        else:
+            return {"error": f"Failed to fetch URLs. Status code: {response.status_code}"}
     except Exception as e:
-        return {
-            'url_components': url_components if 'url_components' in locals() else None,
-            'error': str(e),
-            'analysis': 'Analysis failed due to an error',
-            'analysis_time': 0
-        }
+        return {"error": f"Error fetching URLs: {str(e)}"}
 
-@app.route("/fetch-urls")
-def fetch_urls():
+def filter_aws_urls(phishing_urls):
+    """Filter AWS-hosted URLs."""
+    aws_pattern = r"(\.amazonaws\.com)"
     try:
-        # Fetch the URLs from OpenPhish
-        response = requests.get("https://openphish.com/feed.txt", timeout=5)
-        urls = response.text.strip().split('\n')[:3]  # Get first 3 URLs
-
-        # Save the fetched URLs to a text file
-        with open('fetched_urls.txt', 'w') as f:
-            for url in urls:
-                f.write(url + '\n')
-
-        return jsonify({"urls": urls})
+        aws_urls = [url for url in phishing_urls if re.search(aws_pattern, url)]
+        return aws_urls
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": f"Error filtering AWS URLs: {str(e)}"}
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -130,6 +45,16 @@ def index():
         url = request.form.get("url")
         analysis_result = analyze_url(url)
     return render_template("index.html", analysis_result=analysis_result)
+
+@app.route("/fetch", methods=["GET"])
+def fetch():
+    phishing_urls = fetch_phishing_urls()
+    if isinstance(phishing_urls, dict) and "error" in phishing_urls:
+        return jsonify({"error": phishing_urls["error"]})
+    aws_urls = filter_aws_urls(phishing_urls)
+    if isinstance(aws_urls, dict) and "error" in aws_urls:
+        return jsonify({"error": aws_urls["error"]})
+    return jsonify({"aws_urls": aws_urls})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=True)
