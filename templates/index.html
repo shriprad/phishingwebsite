@@ -1,59 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Advanced Phishing URL Analyzer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing URL Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .search-container input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .search-container button {
+            padding: 0.75rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .search-container button:hover {
+            background-color: #2980b9;
+        }
+        .analysis-result, .fetched-urls {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px solid #e0e0e0;
+        }
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .component-item {
+            background-color: #e9f3fb;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .fetched-urls ul {
+            list-style-type: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .fetched-urls li {
+            background-color: #f0f0f0;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f4f4f4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>Advanced Phishing URL Analyzer</h1>
+    <div class="container">
+        <h1>Phishing URL Analyzer</h1>
+        
+        <form method="POST" class="search-container">
+            <input type="text" name="url" placeholder="Enter URL to analyze" required>
+            <button type="submit">Analyze URL</button>
+            <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
+        </form>
 
-    <form method="POST">
-        <input type="text" name="url" placeholder="Enter URL to analyze">
-        <button type="submit">Analyze URL</button>
-        <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
-    </form>
+        {% if analysis_result %}
+        <div class="analysis-result">
+            <h2>URL Components</h2>
+            <div class="component-grid">
+                <div class="component-item">
+                    <strong>Full URL:</strong><br> {{ analysis_result.url_components.full_url }}
+                </div>
+                <div class="component-item">
+                    <strong>Scheme:</strong><br> {{ analysis_result.url_components.scheme }}
+                </div>
+                <div class="component-item">
+                    <strong>Domain:</strong><br> {{ analysis_result.url_components.domain }}
+                </div>
+                <div class="component-item">
+                    <strong>Subdomain:</strong><br> {{ analysis_result.url_components.subdomain }}
+                </div>
+                <div class="component-item">
+                    <strong>Path:</strong><br> {{ analysis_result.url_components.path }}
+                </div>
+                <div class="component-item">
+                    <strong>Query Parameters:</strong><br> {{ analysis_result.url_components.query }}
+                </div>
+            </div>
 
-    {% if analysis_result %}
-    <div class="analysis-result">
-        <h2>URL Components</h2>
-        <div class="component-grid">
-            <div class="component-item">
-                <strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}
-            </div>
-            <div class="component-item">
-                <strong>Scheme:</strong> {{ analysis_result.url_components.scheme }}
-            </div>
-            <div class="component-item">
-                <strong>Domain:</strong> {{ analysis_result.url_components.domain }}
-            </div>
-            <div class="component-item">
-                <strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain }}
-            </div>
-            <div class="component-item">
-                <strong>Path:</strong> {{ analysis_result.url_components.path }}
-            </div>
-            <div class="component-item">
-                <strong>Query Parameters:</strong> {{ analysis_result.url_components.query }}
-            </div>
+            <h2>Phishing Analysis</h2>
+            <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
+            <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
+            <pre>{{ analysis_result.analysis }}</pre>
         </div>
+        {% endif %}
 
-        <h2>Phishing Analysis</h2>
-        <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
-        <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
-        <pre>{{ analysis_result.analysis }}</pre>
+        {% if fetched_urls %}
+        <div class="fetched-urls">
+            <h2>Fetched Phishing URLs</h2>
+            <ul>
+                {% for url in fetched_urls %}
+                <li>{{ url }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-
-    {% if fetched_urls %}
-    <div class="fetched-urls">
-        <h2>Fetched Phishing URLs</h2>
-        <ul>
-            {% for url in fetched_urls %}
-            <li>{{ url }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-</div>
 </body>
 </html>
