@@ -3,6 +3,8 @@ import time
 import urllib.parse
 import tldextract
 import google.generativeai as genai
+import requests
+from bs4 import BeautifulSoup
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
@@ -29,10 +31,24 @@ def extract_url_components(url):
         'suffix': extracted.suffix
     }
 
+def get_page_title(url):
+    """Fetch the webpage and extract the title"""
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        title = soup.title.string.strip() if soup.title else "No title found"
+        return title
+    except requests.RequestException as e:
+        return f"Error fetching title: {str(e)}"
+
 def analyze_url(url):
     try:
         # Extract URL components for analysis
         url_components = extract_url_components(url)
+        
+        # Get the page title (which may give brand information)
+        page_title = get_page_title(url)
         
         # Craft a comprehensive analysis prompt
         analysis_prompt = f"""Perform a detailed phishing URL analysis for: {url}
@@ -44,6 +60,8 @@ def analyze_url(url):
         - TLD: {url_components['suffix']}
         - Path: {url_components['path']}
         - Query Parameters: {url_components['query']}
+
+        Page Title: {page_title}
 
         Please provide a comprehensive security analysis including:
 
@@ -93,7 +111,8 @@ def analyze_url(url):
         analysis_result = {
             'url_components': url_components,
             'analysis': response.text,
-            'analysis_time': analysis_time
+            'analysis_time': analysis_time,
+            'page_title': page_title
         }
 
         return analysis_result
@@ -103,7 +122,8 @@ def analyze_url(url):
             'url_components': url_components if 'url_components' in locals() else None,
             'error': str(e),
             'analysis': 'Analysis failed due to an error',
-            'analysis_time': 0
+            'analysis_time': 0,
+            'page_title': None
         }
 
 @app.route("/", methods=["GET", "POST"])
