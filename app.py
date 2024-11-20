@@ -20,9 +20,9 @@ os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 # Gmail configuration
-SENDER_EMAIL = 'freephishingreports@gmail.com'  # Replace with your Gmail address
-APP_PASSWORD = 'fpye icmx zsxg otpt'  # Replace with your Gmail App Password
-RECEIVER_EMAIL = 'trustandsafety@support.aws.com'  # Replace with recipient email
+SENDER_EMAIL = 'your_gmail@gmail.com'  # Replace with your Gmail address
+APP_PASSWORD = 'your_app_password'  # Replace with your Gmail App Password
+RECEIVER_EMAIL = 'receiver_email@gmail.com'  # Replace with recipient email
 
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
