@@ -1,13 +1,11 @@
+import subprocess
 import requests
-import socket
-import ipaddress
 from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
 # OpenPhish URL for phishing URLs
 OPENPHISH_URL = "https://openphish.com/feed.txt"
-AWS_IP_RANGES_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 
 def fetch_phishing_urls():
     """Fetch phishing URLs from OpenPhish."""
@@ -21,37 +19,36 @@ def fetch_phishing_urls():
     except Exception as e:
         return {"error": f"Error fetching URLs from OpenPhish: {str(e)}"}
 
-def fetch_aws_ip_ranges():
-    """Fetch AWS IP ranges from the official AWS source."""
+def resolve_to_ip_with_dig(url):
+    """Resolve the URL to its IP address using the dig command."""
     try:
-        response = requests.get(AWS_IP_RANGES_URL)
-        if response.status_code == 200:
-            aws_data = response.json()
-            return [prefix['ip_prefix'] for prefix in aws_data['prefixes']]
-        else:
-            return {"error": f"Failed to fetch AWS IP ranges. Status code: {response.status_code}"}
-    except Exception as e:
-        return {"error": f"Error fetching AWS IP ranges: {str(e)}"}
+        # Extract the domain name from the URL
+        domain = url.split("/")[2]
 
-def resolve_to_ip(url):
-    """Resolve the URL to its IP address."""
-    try:
-        # Extract domain from the URL
-        hostname = url.split("/")[2]
-        ip = socket.gethostbyname(hostname)
+        # Use subprocess to call the dig command
+        result = subprocess.run(["dig", "+short", domain], capture_output=True, text=True)
+
+        # Check for any errors in the command output
+        if result.returncode != 0:
+            return None
+
+        # Return the first IP address found (in case there are multiple)
+        ip = result.stdout.strip().splitlines()[0]
         return ip
     except Exception as e:
         return None
 
-def is_ip_in_aws_ranges(ip, aws_ranges):
-    """Check if the IP is within AWS's IP ranges."""
+def check_if_aws_hosted(ip):
+    """Check if the IP is hosted on Amazon by running a whois lookup."""
     try:
-        ip_obj = ipaddress.ip_address(ip)
-        for aws_range in aws_ranges:
-            if ip_obj in ipaddress.ip_network(aws_range):
-                return True
+        # Use subprocess to call whois
+        result = subprocess.run(["whois", ip], capture_output=True, text=True)
+
+        # If the whois command was successful, check for "amazon" or "aws" in the output
+        if result.returncode == 0 and ("amazon" in result.stdout.lower() or "aws" in result.stdout.lower()):
+            return True
         return False
-    except ValueError as e:
+    except Exception as e:
         return False
 
 @app.route("/", methods=["GET"])
@@ -65,17 +62,11 @@ def check_aws():
     if isinstance(phishing_urls, dict) and "error" in phishing_urls:
         return jsonify({"error": phishing_urls["error"]})
 
-    # Step 2: Fetch AWS IP ranges
-    aws_ip_ranges = fetch_aws_ip_ranges()
-    if isinstance(aws_ip_ranges, dict) and "error" in aws_ip_ranges:
-        return jsonify({"error": aws_ip_ranges["error"]})
-
-    # Step 3: Check if the domains are hosted on AWS using DNS lookup and AWS IP ranges
+    # Step 2: Check if the domains are hosted on AWS using DNS lookup and WHOIS
     aws_hosted_urls = []
     for url in phishing_urls:
-        domain = url.split("/")[2]  # Extract domain from URL
-        ip = resolve_to_ip(url)
-        if ip and is_ip_in_aws_ranges(ip, aws_ip_ranges):
+        ip = resolve_to_ip_with_dig(url)
+        if ip and check_if_aws_hosted(ip):
             aws_hosted_urls.append(url)
 
     return jsonify({
