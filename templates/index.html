@@ -1,82 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Phishing URL Analyzer</title>
-    <style>
-        /* Existing styles unchanged */
-
-        .fetch-box {
-            background-color: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-
-        .fetch-result {
-            margin-top: 1.5rem;
-        }
-
-        .fetch-result p {
-            font-weight: 600;
-        }
-
-        .error-message {
-            background-color: #fee2e2;
-            color: var(--danger-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Advanced Phishing URL Analyzer</h1>
-        
-        <!-- Existing search-box -->
-        <div class="search-box">
-            <form method="POST" class="input-group">
-                <input type="text" name="url" placeholder="Enter URL to analyze" required>
-                <button type="submit">Analyze</button>
-            </form>
-        </div>
+<div class="container">
+    <h1>Advanced Phishing URL Analyzer</h1>
 
-        <!-- New Fetch URLs Section -->
-        <div class="fetch-box">
-            <button onclick="fetchUrls()">Fetch URLs</button>
-            <div id="fetch-result" class="fetch-result"></div>
-        </div>
+    <form method="POST">
+        <input type="text" name="url" placeholder="Enter URL to analyze">
+        <button type="submit">Analyze URL</button>
+        <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
+    </form>
 
-        {% if analysis_result %}
-            <div class="analysis-result">
-                <!-- Existing analysis result section -->
+    {% if analysis_result %}
+    <div class="analysis-result">
+        <h2>URL Components</h2>
+        <div class="component-grid">
+            <div class="component-item">
+                <strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}
             </div>
-        {% endif %}
-    </div>
+            <div class="component-item">
+                <strong>Scheme:</strong> {{ analysis_result.url_components.scheme }}
+            </div>
+            <div class="component-item">
+                <strong>Domain:</strong> {{ analysis_result.url_components.domain }}
+            </div>
+            <div class="component-item">
+                <strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain }}
+            </div>
+            <div class="component-item">
+                <strong>Path:</strong> {{ analysis_result.url_components.path }}
+            </div>
+            <div class="component-item">
+                <strong>Query Parameters:</strong> {{ analysis_result.url_components.query }}
+            </div>
+        </div>
 
-    <script>
-        async function fetchUrls() {
-            const fetchResult = document.getElementById("fetch-result");
-            fetchResult.innerHTML = "Fetching URLs, please wait...";
-            try {
-                const response = await fetch("https://openphish.com/feed.txt");
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.text();
-                const urls = data.trim().split("\n");
-                fetchResult.innerHTML = `
-                    <p>Fetched ${urls.length} URLs:</p>
-                    <pre>${urls.slice(0, 50).join("\n")}</pre> <!-- Display first 50 URLs -->
-                `;
-            } catch (error) {
-                fetchResult.innerHTML = `
-                    <div class="error-message">Failed to fetch URLs: ${error.message}</div>
-                `;
-            }
-        }
-    </script>
+        <h2>Phishing Analysis</h2>
+        <p><strong>Page Title:</strong> {{ analysis_result.page_title }}</p>
+        <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
+        <pre>{{ analysis_result.analysis }}</pre>
+    </div>
+    {% endif %}
+
+    {% if fetched_urls %}
+    <div class="fetched-urls">
+        <h2>Fetched Phishing URLs</h2>
+        <ul>
+            {% for url in fetched_urls %}
+            <li>{{ url }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
 </body>
 </html>
