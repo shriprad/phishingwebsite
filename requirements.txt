@@ -2,3 +2,5 @@ Flask==2.2.5
 tldextract==3.4.1
 google-generativeai
 gunicorn==20.1.0
+beautifulsoup4==4.12.2  # For web scraping and extracting title from HTML
+requests==2.31.0
