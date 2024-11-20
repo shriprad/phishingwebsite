@@ -1,43 +1,82 @@
-<div class="search-box">
-    <button id="fetch-btn">Fetch</button>
-</div>
-
-<div id="fetch-loading" class="loading">
-    Fetching phishing URLs from OpenPhish...
-</div>
-
-<div id="fetch-result" class="analysis-result"></div>
-
-<script>
-    document.getElementById('fetch-btn').addEventListener('click', async () => {
-        const loading = document.getElementById('fetch-loading');
-        const result = document.getElementById('fetch-result');
-
-        loading.classList.add('active');
-        result.innerHTML = ''; // Clear previous results
-
-        try {
-            const response = await fetch('/fetch');
-            const data = await response.json();
-
-            if (data.error) {
-                result.innerHTML = `<div class="error-message">${data.error}</div>`;
-            } else {
-                result.innerHTML = `
-                    <div class="url-components">
-                        <h2>Phishing URL Statistics</h2>
-                        <p>Total URLs Fetched: ${data.total_urls}</p>
-                        <p>AWS-Hosted Phishing URLs: ${data.aws_count}</p>
-                        ${data.aws_urls.length > 0
-                            ? `<ul>${data.aws_urls.map(url => `<li>${url}</li>`).join('')}</ul>`
-                            : '<p>No AWS-hosted phishing URLs found.</p>'
-                        }
-                    </div>`;
-            }
-        } catch (err) {
-            result.innerHTML = `<div class="error-message">Error fetching data: ${err.message}</div>`;
-        } finally {
-            loading.classList.remove('active');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing URL Fetcher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f5f5f5;
         }
-    });
-</script>
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: block;
+            color: #007bff;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phishing URL Fetcher</h1>
+        <button id="fetch-btn">Fetch Phishing URLs</button>
+        <div id="loading" class="loading">Fetching data, please wait...</div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('fetch-btn').addEventListener('click', async () => {
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            loading.classList.add('active');
+            result.innerHTML = '';
+
+            try {
+                const response = await fetch('/fetch');
+                const data = await response.json();
+
+                if (data.error) {
+                    result.innerHTML = `<p style="color: red;">${data.error}</p>`;
+                } else {
+                    result.innerHTML = `
+                        <p>Total URLs Fetched: ${data.total_urls}</p>
+                        <p>AWS-Hosted URLs Found: ${data.aws_count}</p>
+                        <ul>${data.aws_urls.map(url => `<li>${url}</li>`).join('')}</ul>
+                    `;
+                }
+            } catch (err) {
+                result.innerHTML = `<p style="color: red;">Error fetching data: ${err.message}</p>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
