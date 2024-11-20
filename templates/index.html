@@ -48,6 +48,14 @@
             margin-bottom: 15px;
             text-align: center;
         }
+        .error-message {
+            background-color: #f2dede;
+            color: #a94442;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
         .analysis-result {
             background-color: #fff;
             border: 1px solid #ddd;
@@ -66,6 +74,13 @@
             padding: 15px;
             border-radius: 8px;
         }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -78,6 +93,12 @@
             <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
         </form>
 
+        {% if error_message %}
+        <div class="error-message">
+            <p>⚠️ {{ error_message }}</p>
+        </div>
+        {% endif %}
+
         {% if email_sent %}
         <div class="email-confirmation">
             <p>📧 Email Notification Sent Successfully</p>
@@ -87,14 +108,19 @@
 
         {% if analysis_result %}
         <div class="analysis-result">
+            {% if analysis_result.error %}
+            <div class="error-message">
+                <p>❌ Analysis Error: {{ analysis_result.error }}</p>
+            </div>
+            {% else %}
             <h2>URL Components</h2>
             <div class="component-grid">
                 <div><strong>Full URL:</strong> {{ analysis_result.url_components.full_url }}</div>
-                <div><strong>Scheme:</strong> {{ analysis_result.url_components.scheme }}</div>
-                <div><strong>Domain:</strong> {{ analysis_result.url_components.domain }}</div>
-                <div><strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain }}</div>
-                <div><strong>Path:</strong> {{ analysis_result.url_components.path }}</div>
-                <div><strong>Query Parameters:</strong> {{ analysis_result.url_components.query }}</div>
+                <div><strong>Scheme:</strong> {{ analysis_result.url_components.scheme or 'N/A' }}</div>
+                <div><strong>Domain:</strong> {{ analysis_result.url_components.domain or 'N/A' }}</div>
+                <div><strong>Subdomain:</strong> {{ analysis_result.url_components.subdomain or 'N/A' }}</div>
+                <div><strong>Path:</strong> {{ analysis_result.url_components.path or 'N/A' }}</div>
+                <div><strong>Query Parameters:</strong> {{ analysis_result.url_components.query or 'N/A' }}</div>
             </div>
 
             <h2>Phishing Analysis</h2>
@@ -102,6 +128,7 @@
             <p><strong>Analysis Time:</strong> {{ analysis_result.analysis_time }} seconds</p>
             
             <pre>{{ analysis_result.analysis }}</pre>
+            {% endif %}
         </div>
         {% endif %}
 
