@@ -5,6 +5,8 @@ import tldextract
 import google.generativeai as genai
 import requests
 from bs4 import BeautifulSoup
+import ssl
+import socket
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
@@ -42,6 +44,27 @@ def get_page_title(url):
     except requests.RequestException as e:
         return f"Error fetching title: {str(e)}"
 
+def check_ssl_tls(url):
+    """Check if the URL uses SSL/TLS (HTTPS) and analyze the certificate"""
+    parsed_url = urllib.parse.urlparse(url)
+    
+    if parsed_url.scheme != 'https':
+        return {"ssl_status": "Not Secure", "message": "The URL does not use HTTPS."}
+    
+    try:
+        # Get the host from the URL
+        host = parsed_url.netloc
+        
+        # Establish an SSL connection to the host
+        context = ssl.create_default_context()
+        with socket.create_connection((host, 443)) as conn:
+            with context.wrap_socket(conn, server_hostname=host) as ssl_socket:
+                ssl_info = ssl_socket.getpeercert()
+                # You can add more certificate validation checks here if needed
+                return {"ssl_status": "Secure", "certificate_info": ssl_info}
+    except Exception as e:
+        return {"ssl_status": "Error", "message": str(e)}
+
 def analyze_url(url):
     try:
         # Extract URL components for analysis
@@ -49,6 +72,9 @@ def analyze_url(url):
         
         # Get the page title (which may give brand information)
         page_title = get_page_title(url)
+        
+        # Check SSL/TLS status
+        ssl_status = check_ssl_tls(url)
         
         # Craft a comprehensive analysis prompt
         analysis_prompt = f"""Perform a detailed phishing URL analysis for: {url}
@@ -62,6 +88,9 @@ def analyze_url(url):
         - Query Parameters: {url_components['query']}
 
         Page Title: {page_title}
+
+        SSL/TLS Status: {ssl_status['ssl_status']}
+        Certificate Info: {ssl_status.get('certificate_info', 'No certificate info available')}
 
         Please provide a comprehensive security analysis including:
 
@@ -112,7 +141,8 @@ def analyze_url(url):
             'url_components': url_components,
             'analysis': response.text,
             'analysis_time': analysis_time,
-            'page_title': page_title
+            'page_title': page_title,
+            'ssl_status': ssl_status
         }
 
         return analysis_result
@@ -123,7 +153,8 @@ def analyze_url(url):
             'error': str(e),
             'analysis': 'Analysis failed due to an error',
             'analysis_time': 0,
-            'page_title': None
+            'page_title': None,
+            'ssl_status': None
         }
 
 @app.route("/", methods=["GET", "POST"])
