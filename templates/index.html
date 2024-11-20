@@ -3,204 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Phishing URL Analyzer</title>
+    <title>Vimarsh - AI-Powered Phishing Detector</title>
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --danger-color: #dc2626;
-            --warning-color: #d97706;
-            --success-color: #16a34a;
-            --background-color: #f8fafc;
-        }
-
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--background-color);
-            color: #1e293b;
-            line-height: 1.6;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
             margin: 0;
             padding: 20px;
+            line-height: 1.6;
         }
-
         .container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
-            background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            padding: 2rem;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
         }
-
         h1 {
-            color: #1e293b;
+            color: #2c3e50;
             text-align: center;
-            font-size: 2rem;
-            margin-bottom: 2rem;
+            margin-bottom: 30px;
         }
-
-        .search-box {
-            background-color: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-
         .input-group {
-            display: flex;
-            gap: 1rem;
+            margin: 20px 0;
         }
-
         input[type="text"] {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            transition: all 0.3s;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
         }
-
         input[type="text"]:focus {
+            border-color: #3498db;
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
-
         button {
-            background-color: var(--primary-color);
+            background-color: #2980b9;
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
-            font-weight: 500;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
         }
-
         button:hover {
-            background-color: #1d4ed8;
+            background-color: #3498db;
         }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            display: none;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
         .analysis-result {
-            margin-top: 2rem;
+            margin-top: 30px;
         }
-
-        .url-components {
-            background-color: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
+        .url-breakdown {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
         }
-
-        .component-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+        .url-part {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-
-        .component-item {
-            background-color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
         .analysis-content {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
             white-space: pre-wrap;
         }
-
-        .risk-high {
-            color: var(--danger-color);
-            font-weight: 600;
+        .feature-analysis {
+            margin-top: 20px;
         }
-
-        .risk-medium {
-            color: var(--warning-color);
-            font-weight: 600;
+        .feature-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
         }
-
-        .risk-low {
-            color: var(--success-color);
-            font-weight: 600;
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
         }
-
-        .analysis-time {
-            text-align: right;
-            color: #64748b;
-            font-size: 0.875rem;
-            margin-top: 1rem;
-        }
-
-        .error-message {
-            background-color: #fee2e2;
-            color: var(--danger-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
+        .loading.active {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Advanced Phishing URL Analyzer</h1>
+        <h1>Vimarsh - AI-Powered Phishing URL Analyzer</h1>
         
-        <div class="search-box">
-            <form method="POST" class="input-group">
-                <input type="text" name="url" placeholder="Enter URL to analyze..." required>
-                <button type="submit">Analyze</button>
-            </form>
-        </div>
+        <form method="POST" class="input-group">
+            <input type="text" name="url" placeholder="Enter URL to analyze" required>
+            <button type="submit">Analyze URL</button>
+        </form>
 
         <div id="loading" class="loading">
-            <div class="loading-content">
-                Performing comprehensive security analysis...
-                <div class="loading-subtext">This may take a few seconds</div>
-            </div>
+            Analyzing URL using AI... Please wait...
         </div>
 
         {% if analysis_result %}
         <div class="analysis-result">
-            {% if analysis_result.error %}
-            <div class="error-message">
-                {{ analysis_result.error }}
+            <h2>Analysis Results for: {{ analysis_result.url }}</h2>
+            
+            <div class="url-breakdown">
+                <h3>URL Structure Analysis:</h3>
+                {% for part, value in analysis_result.url_parts.items() %}
+                {% if value %}
+                <div class="url-part">
+                    <strong>{{ part }}:</strong> {{ value }}
+                </div>
+                {% endif %}
+                {% endfor %}
             </div>
-            {% else %}
-            <div class="url-components">
-                <h2>URL Structure Analysis</h2>
-                <div class="component-grid">
-                    {% for key, value in analysis_result.url_components.items() %}
-                    {% if value %}
-                    <div class="component-item">
-                        <strong>{{ key|title }}:</strong>
-                        <div>{{ value }}</div>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
+
+            <div class="feature-analysis">
+                <h3>Detailed AI Analysis:</h3>
+                <div class="analysis-content">
+                    {{ analysis_result.analysis | safe }}
                 </div>
             </div>
-
-            <div class="analysis-content">
-                {{ analysis_result.analysis | safe }}
-            </div>
-
-            <div class="analysis-time">
-                Analysis completed in {{ analysis_result.analysis_time }} seconds
-            </div>
-            {% endif %}
         </div>
         {% endif %}
     </div>
