@@ -152,7 +152,32 @@
             border-radius: 8px;
             margin-top: 1rem;
         }
+
+        .fetch-result {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+        }
     </style>
+    <script>
+        async function fetchUrls() {
+            try {
+                const response = await fetch("/fetch-urls");
+                const data = await response.json();
+
+                const resultContainer = document.getElementById("fetchResult");
+                resultContainer.innerHTML = `<p><strong>Total URLs fetched:</strong> ${data.count}</p>`;
+                resultContainer.innerHTML += "<ul>";
+                data.urls.forEach(url => {
+                    resultContainer.innerHTML += `<li>${url}</li>`;
+                });
+                resultContainer.innerHTML += "</ul>";
+            } catch (error) {
+                alert("Error fetching URLs: " + error.message);
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -163,7 +188,10 @@
                 <input type="text" name="url" placeholder="Enter URL to analyze" required>
                 <button type="submit">Analyze</button>
             </form>
+            <button onclick="fetchUrls()">Fetch URLs</button>
         </div>
+
+        <div id="fetchResult" class="fetch-result"></div>
 
         {% if analysis_result %}
             <div class="analysis-result">
