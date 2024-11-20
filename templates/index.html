@@ -58,7 +58,7 @@
             const result = document.getElementById('result');
 
             loading.classList.add('active');
-            result.innerHTML = ''; // Clear previous results
+            result.innerHTML = '';
 
             try {
                 const response = await fetch('/check-aws');
