@@ -56,6 +56,24 @@
         .search-container button:hover {
             background-color: #2980b9;
         }
+        .fetch-urls-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        .fetch-urls-btn {
+            padding: 0.75rem 1.5rem;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .fetch-urls-btn:hover {
+            background-color: #27ae60;
+        }
         .analysis-result, .fetched-urls {
             background-color: #f9f9f9;
             border-radius: 8px;
@@ -102,10 +120,15 @@
         <h1>Phishing URL Analyzer</h1>
         
         <form method="POST" class="search-container">
-            <input type="text" name="url" placeholder="Enter URL to analyze" required>
+            <input type="text" name="url" placeholder="Enter URL to analyze">
             <button type="submit">Analyze URL</button>
-            <button type="submit" name="fetch_urls" value="1">Fetch Phishing URLs</button>
         </form>
+
+        <div class="fetch-urls-container">
+            <form method="POST">
+                <button type="submit" name="action" value="fetch_urls" class="fetch-urls-btn">Fetch Phishing URLs</button>
+            </form>
+        </div>
 
         {% if analysis_result %}
         <div class="analysis-result">
