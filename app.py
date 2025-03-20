@@ -14,7 +14,6 @@ app = Flask(__name__)
 # Configure Gemini AI
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDIIBtiqZeazI5HMbHvnI7udMTz52D25aQ'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-response = genai.generate_content("Check this URL: example.com", timeout=60)  # Increase timeout
 
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
