@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 
 # Configure Gemini AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDIIBtiqZeazI5HMbHvnI7udMTz52D25aQ'
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 def extract_url_components(url):
