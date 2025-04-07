@@ -2,6 +2,7 @@ import os
 import time
 import urllib.parse
 import tldextract
+import google.generativeai as genai
 import requests
 from bs4 import BeautifulSoup
 import ssl
@@ -10,8 +11,9 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Configure DeepSeek AI
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', 'sk-d017a79fccd048db86b92cec9c176188')
+# Configure Gemini AI
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDIIBtiqZeazI5HMbHvnI7udMTz52D25aQ'
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 def extract_url_components(url):
     """Extract and analyze various components of the URL"""
@@ -63,7 +65,7 @@ def check_ssl_tls(url):
     except Exception as e:
         return {"ssl_status": "Error", "message": str(e)}
 
-def analyze_url_with_deepseek(url):
+def analyze_url(url):
     try:
         # Extract URL components for analysis
         url_components = extract_url_components(url)
@@ -128,38 +130,16 @@ def analyze_url_with_deepseek(url):
         Format the response clearly with section headers and bullet points.
         """
 
-        # Get DeepSeek AI analysis
+        # Get Gemini AI analysis
+        model = genai.GenerativeModel('gemini-pro')
         start_time = time.time()
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
-        }
-        
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "user", "content": analysis_prompt}
-            ],
-            "temperature": 0.7,
-            "max_tokens": 2048
-        }
-        
-        response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        
-        response.raise_for_status()
-        response_data = response.json()
-        analysis_text = response_data["choices"][0]["message"]["content"]
+        response = model.generate_content(analysis_prompt)
         analysis_time = round(time.time() - start_time, 2)
 
         # Extract key information from the response
         analysis_result = {
             'url_components': url_components,
-            'analysis': analysis_text,
+            'analysis': response.text,
             'analysis_time': analysis_time,
             'page_title': page_title,
             'ssl_status': ssl_status
@@ -193,7 +173,7 @@ def index():
     if request.method == "POST":
         url = request.form.get("url")
         if url:
-            analysis_result = analyze_url_with_deepseek(url)
+            analysis_result = analyze_url(url)
         
         # Check if fetch URLs button was clicked
         if request.form.get("fetch_urls"):
